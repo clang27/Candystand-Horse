@@ -7,7 +7,8 @@ public enum TurnPhase {
 }
 
 public class GameManager : MonoBehaviour {
-    [SerializeField] private int ShotClock = 10;
+    public int ShotClock = 15;
+    public bool BoomboxEnabled = false;
     
     public static GameManager Instance;
     public TurnPhase TurnPhase { get; set; }
@@ -59,6 +60,7 @@ public class GameManager : MonoBehaviour {
         MenuManager.Instance.CurrentLevel.goal.ResetGoal();
         MenuManager.Instance.CurrentLevel.timer.EndCountdown();
         
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), BoomboxEnabled);
         _basketball.ResetPosition(MenuManager.Instance.CurrentLevel.respawnPoint);
         _basketball.ChangeColor(ballColor);
         
@@ -105,7 +107,7 @@ public class GameManager : MonoBehaviour {
             case 0: _basketball.ChangeColor(Color.red); break;
             case 1: _basketball.ChangeColor(Color.green); break;
             case 2: _basketball.ChangeColor(Color.yellow); break;
-            case 3: _basketball.ChangeColor(Color.blue); break;
+            case 3: _basketball.ChangeColor(Color.cyan); break;
         }
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.StartCountdown(ShotClock);
@@ -119,5 +121,11 @@ public class GameManager : MonoBehaviour {
                 NextPlayersTurn();
         } else 
             GameUiManager.Instance.ShowShotBanner("Incorrect Shot");
+    }
+    public void OutOfBounds() {
+        _basketball.ResetPosition(MenuManager.Instance.CurrentLevel.respawnPoint);
+        
+        if (!InLobby && TurnPhase is TurnPhase.Shooting)
+            NextPlayersTurn();
     }
 }

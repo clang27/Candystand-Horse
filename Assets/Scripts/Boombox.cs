@@ -42,7 +42,7 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
         CurrentOccurrences++;
     }
     public void OnPointerDown(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu) return;
+        if (TrickShotsSelector.InMenu || MenuManager.InMenu || !GameManager.Instance.BoomboxEnabled) return;
 
         var pos = Camera.main.ScreenToWorldPoint(eventData.pressPosition);
         
@@ -53,7 +53,7 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu) return;
+        if (TrickShotsSelector.InMenu || MenuManager.InMenu || !GameManager.Instance.BoomboxEnabled) return;
         if (GameManager.Instance.TurnPhase is not TurnPhase.Resting and not TurnPhase.Moving) return;
         
         Color.RGBToHSV(_spriteRenderer.color, out var h, out var s, out _);
@@ -61,14 +61,14 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu) return;
+        if (TrickShotsSelector.InMenu || MenuManager.InMenu || !GameManager.Instance.BoomboxEnabled) return;
         
         Color.RGBToHSV(_spriteRenderer.color, out var h, out var s, out _);
         _spriteRenderer.color = Color.HSVToRGB(h, s, 1f);
     }
 
     public void OnPointerUp(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu) return;
+        if (TrickShotsSelector.InMenu || MenuManager.InMenu || !GameManager.Instance.BoomboxEnabled) return;
 
         if (eventData.button == PointerEventData.InputButton.Right && _moving)
             EndMoving();

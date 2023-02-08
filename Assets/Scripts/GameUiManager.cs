@@ -13,8 +13,8 @@ public class GameUiManager : MonoBehaviour {
     private void Awake() {
         Instance = this;
         _niceShotCanvas = transform.GetChild(0).GetComponent<CanvasGroup>();
-        _turnCanvases = transform.GetChild(1).GetComponentsInChildren<CanvasGroup>();
-        _shotsButton = transform.GetChild(2).GetChild(0).gameObject;
+        _turnCanvases = transform.GetChild(4).GetChild(1).GetComponentsInChildren<CanvasGroup>();
+        _shotsButton = transform.GetChild(4).GetChild(2).gameObject;
         _message = _niceShotCanvas.GetComponentInChildren<TextMeshProUGUI>();
     }
 
@@ -35,7 +35,9 @@ public class GameUiManager : MonoBehaviour {
         for (var i = 0; i < players.Count; i++) {
             _turnCanvases[i].alpha = (players[i].IsTurn) ? 1f : 0.2f;
             _turnCanvases[i].transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = players[i].Name;
-            _turnCanvases[i].transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = "HORSE".Substring(0, players[i].Score);
+            var horseText = "HORSE".Substring(0, players[i].Score);
+            horseText += "-----".Substring(0, 5 - players[i].Score);
+            _turnCanvases[i].transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = horseText;
         }
     }
 

@@ -84,7 +84,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
     }
     public void StartShooting(Vector2 position) {
         _shooting = true;
-        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), false);
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), !GameManager.Instance.BoomboxEnabled);
         GameManager.Instance.TurnPhase = TurnPhase.Charging;
         Color.RGBToHSV(_ballSpriteRenderer.color, out var h, out var s, out _);
         _ballSpriteRenderer.color = Color.HSVToRGB(h, s, 1f);
@@ -93,7 +93,8 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         ResetRigidbody();
         _arrowSpriteRenderer.enabled = true;
             
-        _arrowTransform.localScale = new Vector3((_ballAimDirection * (_ballTransform.localScale.x * 1.15f)).magnitude + 0.3f, _arrowTransform.localScale.y, _arrowTransform.localScale.z);
+        _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 1f, 1f);
+        //_arrowTransform.localScale = new Vector3((_ballAimDirection * 0.0795f).magnitude + 0.1f, _arrowTransform.localScale.y, _arrowTransform.localScale.z);
         _arrowTransform.rotation = Quaternion.Euler(0, 0, Mathf.Rad2Deg * Mathf.Atan2(_ballAimDirection.y, _ballAimDirection.x));
     }
 
@@ -120,7 +121,8 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
             if (Vector2.Distance(_startBallPoint, newBallLocation) > _maxDistance)
                 _rigidbody.position = _startBallPoint - (aimDirection.normalized * _maxDistance);
 
-            _arrowTransform.localScale = new Vector3((_ballAimDirection * (_ballTransform.localScale.x * 1.15f)).magnitude + 0.3f, _arrowTransform.localScale.y, _arrowTransform.localScale.z);
+            _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 1f, 1f);
+            //_arrowTransform.localScale = new Vector3((_ballAimDirection * 0.0795f).magnitude + 0.1f, _arrowTransform.localScale.y, _arrowTransform.localScale.z);
             _arrowTransform.rotation = Quaternion.Euler(0, 0, Mathf.Rad2Deg * Mathf.Atan2(_ballAimDirection.y, _ballAimDirection.x));
         }
     }
