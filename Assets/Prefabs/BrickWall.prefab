@@ -15,8 +15,9 @@ GameObject:
   - component: {fileID: 7961302357118968645}
   - component: {fileID: 7583559519573634712}
   - component: {fileID: 1519601086953275432}
+  - component: {fileID: 4474106170492492022}
   m_Layer: 6
-  m_Name: Wall
+  m_Name: BrickWall
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -31,7 +32,7 @@ Transform:
   m_GameObject: {fileID: 7961302357118968654}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -21, y: 47, z: 0}
-  m_LocalScale: {x: 6, y: 10, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -75,15 +76,15 @@ SpriteRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 10
-  m_Sprite: {fileID: 21300000, guid: 2a4f872d331a70f4392ccf312e6b87c2, type: 3}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_SortingLayerID: 1133983103
+  m_SortingLayer: -1
+  m_SortingOrder: 4
+  m_Sprite: {fileID: 21300000, guid: d56baa9940452444da5cf6a0521b27c2, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 4, y: 12}
+  m_Size: {x: 8, y: 6}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -123,18 +124,18 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: -12, y: 0}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 4, y: 12}
-    newSize: {x: 4, y: 12}
+    oldSize: {x: 21.333334, y: 16}
+    newSize: {x: 8, y: 6}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 4, y: 12}
+  m_Size: {x: 6, y: 14}
   m_EdgeRadius: 0
 --- !u!114 &7961302357118968645
 MonoBehaviour:
@@ -160,11 +161,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0148e6220fb7fc84390eddac7e535828, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  loudSounds: []
+  loudSounds:
+  - {fileID: 8300000, guid: 40fe5ea9bd10fe047aafb888df13443a, type: 3}
   quietSounds:
-  - {fileID: 8300000, guid: 025a0e5107d9a474a8ba6711e6834809, type: 3}
-  - {fileID: 8300000, guid: 6294431f9e2c3b14695931504c2e0111, type: 3}
-  loudThreshold: 300
+  - {fileID: 8300000, guid: c60ab2d4fdd0e0f418665950313ae2e2, type: 3}
+  - {fileID: 8300000, guid: e656f9ad832258b4591096053107e271, type: 3}
+  - {fileID: 8300000, guid: 22fa0398e49336340bc3ce1042cca8b0, type: 3}
+  - {fileID: 8300000, guid: d9c03042fe2bf744fa1c488cf12fa043, type: 3}
+  - {fileID: 8300000, guid: eea8a0199a4e5dc48b03b07081ff2934, type: 3}
+  - {fileID: 8300000, guid: 0ffdb5da69c4e354698f51b68b3f6c38, type: 3}
+  loudThreshold: 600
 --- !u!82 &1519601086953275432
 AudioSource:
   m_ObjectHideFlags: 0
@@ -261,3 +267,54 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!331 &4474106170492492022
+SpriteMask:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7961302357118968654}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 10758, guid: 0000000000000000f000000000000000, type: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_Sprite: {fileID: 21300000, guid: d56baa9940452444da5cf6a0521b27c2, type: 3}
+  m_MaskAlphaCutoff: 0.908
+  m_FrontSortingLayerID: 1133983103
+  m_BackSortingLayerID: 1133983103
+  m_FrontSortingLayer: -1
+  m_BackSortingLayer: -1
+  m_FrontSortingOrder: 0
+  m_BackSortingOrder: 0
+  m_IsCustomRangeActive: 0
+  m_SpriteSortPoint: 0

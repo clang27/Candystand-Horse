@@ -77,7 +77,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 3
+  m_SortingOrder: 4
   m_Sprite: {fileID: 21300000, guid: 94058068d36c782429f5692bb6c9122b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -139,9 +139,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0148e6220fb7fc84390eddac7e535828, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  loudSounds: []
+  loudSounds:
+  - {fileID: 8300000, guid: 6648291695babf848ab8b61c990e160d, type: 3}
   quietSounds:
-  - {fileID: 8300000, guid: 82d4f040c43d13f42aaf5f0391666dbc, type: 3}
+  - {fileID: 8300000, guid: 48ba7eb7f45d6014384ee644562d8cd6, type: 3}
   loudThreshold: 200
 --- !u!82 &-3695252687475814243
 AudioSource:
