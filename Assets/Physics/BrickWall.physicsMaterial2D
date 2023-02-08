@@ -6,6 +6,6 @@ PhysicsMaterial2D:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Rim
-  friction: 0.1
-  bounciness: 0.3
+  m_Name: BrickWall
+  friction: 0.4
+  bounciness: 0.7
