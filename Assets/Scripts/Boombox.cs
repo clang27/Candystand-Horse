@@ -11,11 +11,13 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     private bool _moving;
     private Collider2D[] _results = new Collider2D[2];
     private Transform _transform;
+    private Animator _animator;
 
     private void Awake() {
         _audioSource = GetComponent<AudioSource>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _rigidbody = GetComponent<Rigidbody2D>();
+        _animator = GetComponent<Animator>();
         _transform = transform;
     }
     
@@ -27,8 +29,10 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     }
 
     public void OnPointerClick(PointerEventData eventData) {
-        if (eventData.button == PointerEventData.InputButton.Left)
+        if (eventData.button == PointerEventData.InputButton.Left) {
             _audioSource.mute = !_audioSource.mute;
+            _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D col) {

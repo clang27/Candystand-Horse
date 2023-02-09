@@ -76,6 +76,9 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         _startClickPoint = position;
         _startBallPoint = _ballTransform.position;
         ResetRigidbody();
+        
+        if (GameManager.Instance.InLobby)
+            MenuManager.Instance.CurrentLevel.goal.ResetGoal();
     }
 
     public void EndMoving() {
@@ -96,6 +99,9 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 1f, 1f);
         //_arrowTransform.localScale = new Vector3((_ballAimDirection * 0.0795f).magnitude + 0.1f, _arrowTransform.localScale.y, _arrowTransform.localScale.z);
         _arrowTransform.rotation = Quaternion.Euler(0, 0, Mathf.Rad2Deg * Mathf.Atan2(_ballAimDirection.y, _ballAimDirection.x));
+        
+        if (GameManager.Instance.InLobby)
+            MenuManager.Instance.CurrentLevel.goal.ResetGoal();
     }
 
     public void EndShooting() {

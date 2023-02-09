@@ -15,13 +15,16 @@ public class GameManager : MonoBehaviour {
     private BasketballFlick _basketball;
     private TrickShotsSelector _trickShotsSelector;
     private Transform _cameraTransform;
+    private AudioSource _whistleAudioSource;
     private List<Player> _players = new();
     private bool _shotMade { get; set; }
+    private bool _incorrectShot { get; set; }
     public bool InLobby { get; private set; }
     
     private void Awake() {
         Instance = this;
 
+        _whistleAudioSource = GetComponent<AudioSource>();
         _basketball = FindObjectOfType<BasketballFlick>();
         _trickShotsSelector = FindObjectOfType<TrickShotsSelector>();
         _cameraTransform = FindObjectOfType<Camera>().transform;
@@ -50,6 +53,7 @@ public class GameManager : MonoBehaviour {
 
     private void ResetScene(bool inLobby, Color ballColor) {
         _shotMade = false;
+        _incorrectShot = false;
         TurnPhase = TurnPhase.Resting;
         InLobby = inLobby;
         
@@ -71,6 +75,14 @@ public class GameManager : MonoBehaviour {
     }
     
     public void NextPlayersTurn() {
+        if (_incorrectShot) {
+            _whistleAudioSource.Play();
+            GameUiManager.Instance.ShowShotBanner("Wrong Shot");
+        } else if (_shotMade) {
+            GameUiManager.Instance.ShowShotBanner(!Player.SomeHasAShotSet(_players) ? "Shot Set" : "Nice Shot");
+        } else
+            GameUiManager.Instance.ShowShotBanner("No Shot");
+        
         var successfulShot = _shotMade && FindObjectOfType<TrickShotsSelector>().AllAccomplished();
 
         if (successfulShot && !Player.SomeHasAShotSet(_players))
@@ -83,9 +95,7 @@ public class GameManager : MonoBehaviour {
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.EndCountdown();
         MenuManager.Instance.CurrentLevel.goal.ResetGoal();
-        
-        if (!_shotMade)
-            GameUiManager.Instance.ShowShotBanner("No Shot");
+
         StartCoroutine(PauseSwitchingTurns());
     }
 
@@ -102,6 +112,7 @@ public class GameManager : MonoBehaviour {
         }
         
         _shotMade = false;
+        _incorrectShot = false;
         Player.GoToNextPlayer(_players);
         switch (_players.IndexOf(Player.CurrentPlayer(_players))) {
             case 0: _basketball.ChangeColor(Color.red); break;
@@ -114,13 +125,15 @@ public class GameManager : MonoBehaviour {
     }
 
     public void ShotMade() {
-        if (_trickShotsSelector.AllAccomplished()) {
-            _shotMade = true;
-            GameUiManager.Instance.ShowShotBanner(!Player.SomeHasAShotSet(_players) && !InLobby ? "Shot Set" : "Nice Shot");
-            if (!InLobby)
-                NextPlayersTurn();
-        } else 
-            GameUiManager.Instance.ShowShotBanner("Incorrect Shot");
+        if (InLobby) {
+            GameUiManager.Instance.ShowShotBanner("Nice Shot");
+            MenuManager.Instance.CurrentLevel.goal.ResetGoal();
+            return;
+        }
+        
+        _shotMade = true;
+        _incorrectShot = !_trickShotsSelector.AllAccomplished();
+        NextPlayersTurn();
     }
     public void OutOfBounds() {
         _basketball.ResetPosition(MenuManager.Instance.CurrentLevel.respawnPoint);
