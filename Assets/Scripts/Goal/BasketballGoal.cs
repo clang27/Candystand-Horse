@@ -15,7 +15,7 @@ public class BasketballGoal : MonoBehaviour {
 
     private void Awake() {
         _swishSounds = GetComponent<BasketballSounds>();
-        _trickShots = FindObjectsOfType<Collider2D>()
+        _trickShots = FindObjectsOfType<Transform>()
             .Select(obj => obj.GetComponent<IShot>())
             .Where(obj => obj != null)
             .ToList();

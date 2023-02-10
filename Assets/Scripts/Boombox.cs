@@ -38,16 +38,21 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     private void OnCollisionEnter2D(Collision2D col) {
         if (col.gameObject.layer != LayerMask.NameToLayer("Ball")) return;
         if (GameManager.Instance.TurnPhase is not TurnPhase.Moving and not TurnPhase.Charging) {
-            if (col.relativeVelocity.sqrMagnitude > 10f)
+            if (col.relativeVelocity.sqrMagnitude > 10f) {
                 _audioSource.mute = !_audioSource.mute;
+                _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
+            }
+                
         }
-
         if (GameManager.Instance.TurnPhase != TurnPhase.Shooting) return;
         CurrentOccurrences++;
     }
     public void OnPointerDown(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu || !GameManager.Instance.BoomboxEnabled) return;
+        if (MenuManager.InMenu || !MenuManager.Instance.BoomboxEnabled) return;
 
+        if (TrickShotsSelector.InMenu)
+            TrickShotsSelector.Instance.CloseMenu();
+        
         var pos = Camera.main.ScreenToWorldPoint(eventData.pressPosition);
         
         if (eventData.button == PointerEventData.InputButton.Right && 
@@ -57,7 +62,7 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu || !GameManager.Instance.BoomboxEnabled) return;
+        if (MenuManager.InMenu || !MenuManager.Instance.BoomboxEnabled) return;
         if (GameManager.Instance.TurnPhase is not TurnPhase.Resting and not TurnPhase.Moving) return;
         
         Color.RGBToHSV(_spriteRenderer.color, out var h, out var s, out _);
@@ -65,14 +70,14 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu || !GameManager.Instance.BoomboxEnabled) return;
+        if (MenuManager.InMenu || !MenuManager.Instance.BoomboxEnabled) return;
         
         Color.RGBToHSV(_spriteRenderer.color, out var h, out var s, out _);
         _spriteRenderer.color = Color.HSVToRGB(h, s, 1f);
     }
 
     public void OnPointerUp(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu || !GameManager.Instance.BoomboxEnabled) return;
+        if (MenuManager.InMenu || !MenuManager.Instance.BoomboxEnabled) return;
 
         if (eventData.button == PointerEventData.InputButton.Right && _moving)
             EndMoving();
@@ -96,6 +101,12 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
         _rigidbody.gravityScale = 0f;
         _rigidbody.velocity = Vector2.zero;
         _rigidbody.angularVelocity = 0f;
+    }
+    
+    public void ResetPosition(Vector3 pos) {
+        _rigidbody.bodyType = RigidbodyType2D.Kinematic;
+        ResetRigidbody();
+        _rigidbody.position = pos;
     }
 
     private void Move(Vector2 position) {

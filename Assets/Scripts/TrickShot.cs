@@ -38,9 +38,8 @@ public class TrickShot: MonoBehaviour {
             }
         });
     }
-
-    private void OnEnable() {
-        ShowCheckmark(_trickShotsSelector.HasShot(this));
+    public void ClearCheckmark() {
+        ShowCheckmark(false);
     }
 
     private void ShowCheckmark(bool b) {

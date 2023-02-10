@@ -32,7 +32,10 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
     }
 
     public void OnPointerDown(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu || _ai.enabled) return;
+        if (MenuManager.InMenu || _ai.enabled) return;
+        
+        if (TrickShotsSelector.InMenu)
+            TrickShotsSelector.Instance.CloseMenu();
 
         var pos = Camera.main.ScreenToWorldPoint(eventData.pressPosition);
         
@@ -46,7 +49,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu || _ai.enabled) return;
+        if (MenuManager.InMenu || _ai.enabled) return;
         if (GameManager.Instance.TurnPhase is not TurnPhase.Resting and not TurnPhase.Responding and not TurnPhase.Moving) return;
         
         Color.RGBToHSV(_ballSpriteRenderer.color, out var h, out var s, out _);
@@ -54,14 +57,14 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu || _ai.enabled) return;
+        if (MenuManager.InMenu || _ai.enabled) return;
         
         Color.RGBToHSV(_ballSpriteRenderer.color, out var h, out var s, out _);
         _ballSpriteRenderer.color = Color.HSVToRGB(h, s, 1f);
     }
 
     public void OnPointerUp(PointerEventData eventData) {
-        if (TrickShotsSelector.InMenu || MenuManager.InMenu || _ai.enabled) return;
+        if (MenuManager.InMenu || _ai.enabled) return;
 
         if (eventData.button == PointerEventData.InputButton.Right && GameManager.Instance.TurnPhase == TurnPhase.Moving)
             EndMoving();
@@ -71,14 +74,10 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
 
     public void StartMoving(Vector2 position) {
         _moving = true;
-        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), true);
-        GameManager.Instance.TurnPhase = TurnPhase.Moving;
+        GameManager.Instance.StartedMove();
         _startClickPoint = position;
         _startBallPoint = _ballTransform.position;
         ResetRigidbody();
-        
-        if (GameManager.Instance.InLobby)
-            MenuManager.Instance.CurrentLevel.goal.ResetGoal();
     }
 
     public void EndMoving() {
@@ -87,8 +86,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
     }
     public void StartShooting(Vector2 position) {
         _shooting = true;
-        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), !GameManager.Instance.BoomboxEnabled);
-        GameManager.Instance.TurnPhase = TurnPhase.Charging;
+        GameManager.Instance.StartedShot();
         Color.RGBToHSV(_ballSpriteRenderer.color, out var h, out var s, out _);
         _ballSpriteRenderer.color = Color.HSVToRGB(h, s, 1f);
         _startClickPoint = position;
@@ -96,17 +94,14 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         ResetRigidbody();
         _arrowSpriteRenderer.enabled = true;
             
-        _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 1f, 1f);
+        _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 0.5f, 1f);
         //_arrowTransform.localScale = new Vector3((_ballAimDirection * 0.0795f).magnitude + 0.1f, _arrowTransform.localScale.y, _arrowTransform.localScale.z);
         _arrowTransform.rotation = Quaternion.Euler(0, 0, Mathf.Rad2Deg * Mathf.Atan2(_ballAimDirection.y, _ballAimDirection.x));
-        
-        if (GameManager.Instance.InLobby)
-            MenuManager.Instance.CurrentLevel.goal.ResetGoal();
     }
 
     public void EndShooting() {
         _shooting = false;
-        GameManager.Instance.TurnPhase = GameManager.Instance.InLobby ? TurnPhase.Resting : TurnPhase.Shooting;
+        GameManager.Instance.EndedShot();
         _arrowSpriteRenderer.enabled = false;
         ResetGravity();
         _rigidbody.AddForce(_ballAimDirection * (_flickForce * _rigidbody.mass), ForceMode2D.Impulse);
@@ -127,7 +122,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
             if (Vector2.Distance(_startBallPoint, newBallLocation) > _maxDistance)
                 _rigidbody.position = _startBallPoint - (aimDirection.normalized * _maxDistance);
 
-            _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 1f, 1f);
+            _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 0.5f, 1f);
             //_arrowTransform.localScale = new Vector3((_ballAimDirection * 0.0795f).magnitude + 0.1f, _arrowTransform.localScale.y, _arrowTransform.localScale.z);
             _arrowTransform.rotation = Quaternion.Euler(0, 0, Mathf.Rad2Deg * Mathf.Atan2(_ballAimDirection.y, _ballAimDirection.x));
         }

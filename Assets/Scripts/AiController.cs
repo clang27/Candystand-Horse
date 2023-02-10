@@ -19,7 +19,7 @@ public class AiController : MonoBehaviour {
         _shotPoint = MenuManager.Instance.CurrentLevel.goalPoint;
         _startPoint = _rigidbody.position;
         // Temporary
-        _destinationPoint = MenuManager.Instance.CurrentLevel.respawnPoint;
+        _destinationPoint = MenuManager.Instance.CurrentLevel.ballRespawnPoint;
         _aimPoint = new Vector2((_shotPoint.x + _destinationPoint.x) / 2f, 10f);
         
         if (GameManager.Instance.TurnPhase == TurnPhase.Moving) {

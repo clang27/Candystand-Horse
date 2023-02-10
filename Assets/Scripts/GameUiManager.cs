@@ -4,40 +4,75 @@ using TMPro;
 using UnityEngine;
 
 public class GameUiManager : MonoBehaviour {
+    [SerializeField] private LeanTweenType _tweenType;
+    [SerializeField] private float _tweenTime;
+    [Header("Words")] 
+    [SerializeField] private string _twoPlayerWord = "HORSE";
+    [SerializeField] private string _threePlayerWord = "DUCK";
+    [SerializeField] private string _fourPlayerWord = "PIG";
+    
     public static GameUiManager Instance;
+    private RectTransform _niceShotRectTransform;
     private CanvasGroup _niceShotCanvas;
     private TextMeshProUGUI _message;
     private CanvasGroup[] _turnCanvases;
-    private GameObject _shotsButton; 
+    private Vector2 _startSize;
+    private Coroutine _hideNiceShotRoutine;
 
     private void Awake() {
         Instance = this;
         _niceShotCanvas = transform.GetChild(0).GetComponent<CanvasGroup>();
-        _turnCanvases = transform.GetChild(4).GetChild(1).GetComponentsInChildren<CanvasGroup>();
-        _shotsButton = transform.GetChild(4).GetChild(2).gameObject;
-        _message = _niceShotCanvas.GetComponentInChildren<TextMeshProUGUI>();
+        _niceShotRectTransform = transform.GetChild(0).GetComponent<RectTransform>();
+        _turnCanvases = transform.GetChild(3).GetChild(1).GetComponentsInChildren<CanvasGroup>();
+        _message = _niceShotRectTransform.GetComponentInChildren<TextMeshProUGUI>();
     }
 
-    public void ShowShotBanner(string message) {
+    private void Start() {
+        _startSize = _niceShotRectTransform.sizeDelta;
+        _niceShotRectTransform.sizeDelta = Vector2.zero;
+    }
+
+    public void ShowBanner(string message, float time) {
+        // Already showing, so hide and restart banner timer
+        if (_niceShotCanvas.alpha > 0.9f) {
+            _niceShotRectTransform.sizeDelta = Vector2.zero;
+            _niceShotCanvas.alpha = 0f;
+            LeanTween.cancel(_niceShotRectTransform);
+            StopCoroutine(_hideNiceShotRoutine);
+        }
+        
         _message.text = message;
         _niceShotCanvas.alpha = 1f;
-        StartCoroutine(HideShotBanner());
-    }
-
-    public void ShowShotsButton(bool b) {
-        _shotsButton.SetActive(b);
+        LeanTween.size(_niceShotRectTransform, _startSize, _tweenTime).setEase(_tweenType);
+        _hideNiceShotRoutine = StartCoroutine(HideShotBanner(time));
     }
 
     public void UpdateScore(List<Player> players) {
         // For clearing canvases if player count is less than 4
         ClearPlayers();
+
+        var word = players.Count switch {
+            2 => _twoPlayerWord,
+            3 => _threePlayerWord,
+            4 => _fourPlayerWord,
+            _ => _twoPlayerWord
+        };
         
+        var blanks = players.Count switch {
+            2 => "-----",
+            3 => "----",
+            4 => "---",
+            _ => "-----"
+        };
+
         for (var i = 0; i < players.Count; i++) {
             _turnCanvases[i].alpha = (players[i].IsTurn) ? 1f : 0.2f;
             _turnCanvases[i].transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = players[i].Name;
-            var horseText = "HORSE".Substring(0, players[i].Score);
-            horseText += "-----".Substring(0, 5 - players[i].Score);
-            _turnCanvases[i].transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = horseText;
+
+            var animalText = word.Substring(0, players[i].Score);
+            animalText += blanks.Substring(0, word.Length - players[i].Score);
+            
+            _turnCanvases[i].transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = animalText;
         }
     }
 
@@ -46,8 +81,9 @@ public class GameUiManager : MonoBehaviour {
             tc.alpha = 0f;
     }
     
-    private IEnumerator HideShotBanner() {
-        yield return new WaitForSeconds(2f);
+    private IEnumerator HideShotBanner(float time) {
+        yield return new WaitForSeconds(time);
+        _niceShotRectTransform.sizeDelta = Vector2.zero;
         _niceShotCanvas.alpha = 0f;
     }
 }

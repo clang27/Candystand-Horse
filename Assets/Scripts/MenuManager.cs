@@ -1,22 +1,36 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 
 public struct BasketballLevel {
-    public Vector3 location, respawnPoint, goalPoint;
+    public Vector3 location, ballRespawnPoint, boomboxRespawnPoint, goalPoint;
     public BasketballGoal goal;
     public TimerUi timer;
 }
+
+[Serializable]
+public enum GameMode {
+    Local, Ai, Online, Practice
+}
+
 public class MenuManager : MonoBehaviour {
     public static MenuManager Instance;
     public static bool InMenu;
     
     [SerializeField] private GameObject _menu;
-    [SerializeField] private TextMeshProUGUI _levelTextMesh, _playerCountTextMesh;
+    [SerializeField] private TextMeshProUGUI _levelTextMesh, _playerCountTextMesh, _shotClockTextMesh;
+    private GameObject _submenuOne, _submenuTwo;
+    
     private int _levelNumber = 0;
     private int _playerCount = 2;
+    public int ShotClock { get; private set; } = 15;
+    public bool BoomboxEnabled { get; private set; }
+    private GameMode BufferedMode { get; set; }
+    
     private const int MinPlayerCount = 2, MaxPlayerCount = 4;
+    private const int MinShotClock = 10, MaxShotClock = 30;
     
     public BasketballLevel CurrentLevel => _levels[_levelNumber];
     private List<BasketballLevel> _levels = new();
@@ -30,13 +44,16 @@ public class MenuManager : MonoBehaviour {
                 goal = lo.GetComponentInChildren<BasketballGoal>(),
                 location = lo.transform.position,
                 timer = lo.GetComponentInChildren<TimerUi>(),
-                respawnPoint = lo.transform.GetChild(0).position,
+                ballRespawnPoint = lo.transform.GetChild(0).position,
+                boomboxRespawnPoint = lo.transform.GetChild(1).position,
                 goalPoint = lo.GetComponentInChildren<BasketballGoal>().transform.GetChild(0).GetChild(0).position
             };
             _levels.Add(bl);
         }
         
         _cameraTransform = FindObjectOfType<Camera>().transform;
+        _submenuOne = _menu.transform.GetChild(0).gameObject;
+        _submenuTwo = _menu.transform.GetChild(1).gameObject;
     }
 
     private void SelectLevel(int levelNumber) {
@@ -70,25 +87,64 @@ public class MenuManager : MonoBehaviour {
         _playerCount = nextPlayerCount;
     }
     
+    public void IncreaseShotClock(int amount) {
+        var nextClock = ShotClock + amount;
+        if (nextClock > MaxShotClock)
+            nextClock = MinShotClock;
+        else if (nextClock < MinShotClock)
+            nextClock = MaxShotClock;
+
+        _shotClockTextMesh.text = nextClock.ToString();
+        ShotClock = nextClock;
+    }
+    public void TurnOnBoombox(bool b) {
+        BoomboxEnabled = b;
+    }
+    
     public void ToggleMenu() {
         InMenu = !InMenu;
+        
+        if (TrickShotsSelector.InMenu)
+            TrickShotsSelector.Instance.CloseMenu();
+        
+        TrickShotsSelector.Instance.ActivateButton(!InMenu && GameManager.Instance.TurnPhase is not TurnPhase.Shooting);
+        _submenuOne.SetActive(true);
+        _submenuTwo.SetActive(false);
         _menu.SetActive(InMenu);
     }
 
     private void CloseMenu() {
         InMenu = false;
-        _menu.SetActive(InMenu);
+        
+        _submenuOne.SetActive(true);
+        _submenuTwo.SetActive(false);
+        _menu.SetActive(false);
     }
 
-    public void GoToLobby() {
-        CloseMenu();
+    public void SelectMode(int mode) {
+        BufferedMode = (GameMode)mode;
         
-        GameManager.Instance.GoToLobby();
+        _submenuOne.SetActive(false);
+        _submenuTwo.SetActive(true);
     }
-
-    public void GoToLocal() {
+    
+    public void Play() {
         CloseMenu();
+        TrickShotsSelector.Instance.ActivateButton(true);
         
-        GameManager.Instance.StartNewGame(_playerCount);
+        switch (BufferedMode) {
+            case GameMode.Practice:
+                GameManager.Instance.GoToPractice();
+                break;
+            case GameMode.Local:
+                GameManager.Instance.GoToLocal(_playerCount);
+                break;
+            case GameMode.Online:
+                break;
+            case GameMode.Ai:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 }

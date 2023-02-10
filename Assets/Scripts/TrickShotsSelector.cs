@@ -2,27 +2,47 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class TrickShotsSelector : MonoBehaviour {
-    public static bool InMenu;
+    public static TrickShotsSelector Instance;
+    public static bool InMenu { get; private set; }
     
     [SerializeField] private GameObject _trickShotMenu;
     [SerializeField] private TextMeshProUGUI _trickList;
+    [SerializeField] private float _startY, _endY;
+    [SerializeField] private Button _trickShotButton;
+    [SerializeField] private Sprite _upArrow, _downArrow;
+    private Image _trickShotButtonArrow;
     private List<TrickShot> Tricks { get; set; }
 
     private void Awake() {
+        Instance = this;
         Tricks = new List<TrickShot>();
+        _trickShotButtonArrow = _trickShotButton.transform.GetChild(0).GetComponent<Image>();
+    }
+    
+    public void ToggleMenu() {
+        InMenu = !InMenu;
+        _trickShotButtonArrow.sprite = (InMenu) ? _downArrow : _upArrow;
+        LeanTween.cancel(_trickShotMenu.GetComponent<RectTransform>());
+        LeanTween
+            .moveY(_trickShotMenu.GetComponent<RectTransform>(), (InMenu) ? _endY : _startY, 0.3f)
+            .setEase(LeanTweenType.easeInSine);
     }
 
-    public void ToggleMenu() {
-        if (GameManager.Instance.TurnPhase is not TurnPhase.Moving and not TurnPhase.Resting) return;
-        InMenu = !InMenu;
-        _trickShotMenu.SetActive(InMenu);
+    public void CloseMenu() {
+        if (InMenu)
+            ToggleMenu();
     }
 
     public void AddShot(TrickShot shot) {
         Tricks.Add(shot);
         UpdateListText();
+    }
+    public void ActivateButton(bool b) {
+        _trickShotButton.interactable = b;
+        _trickShotButtonArrow.color = new Color(1f, 1f, 1f, (b) ? 0.8f: 0f);
     }
 
     private void UpdateListText() {
@@ -43,6 +63,7 @@ public class TrickShotsSelector : MonoBehaviour {
     }
 
     public void ClearTricks() {
+        Tricks.ForEach(t => t.ClearCheckmark());
         Tricks.Clear();
         UpdateListText();
     }
@@ -57,5 +78,9 @@ public class TrickShotsSelector : MonoBehaviour {
             trick.Shots.Sum(s => s.CurrentOccurrences) == trick.TargetOccurrences:
             trick.Shots.Sum(s => s.CurrentOccurrences) >= trick.TargetOccurrences
         );
+    }
+
+    public bool BlindfoldIsOn() {
+        return Tricks.Any(shot => shot.name.Equals("Blindfolded"));
     }
 }

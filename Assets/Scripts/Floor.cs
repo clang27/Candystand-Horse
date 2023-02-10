@@ -18,8 +18,8 @@ public class Floor : MonoBehaviour, IShot {
         _ballTouchingGround = true;
         CurrentOccurrences++;
 
-        if (!GameManager.Instance.InLobby && col.relativeVelocity.y < 0f && col.relativeVelocity.y > -minimumSpeed) {
-            GameManager.Instance.NextPlayersTurn();
+        if (col.relativeVelocity.y < 0f && col.relativeVelocity.y > -minimumSpeed) {
+            GameManager.Instance.ShotMissed();
         }
     }
 
