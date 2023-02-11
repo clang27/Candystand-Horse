@@ -6,6 +6,7 @@ public class Player {
     public int Score { get; set; }
     public bool IsTurn { get; set; }
     public bool SetShot { get; set; }
+    public bool IsAi { get; set; }
     public bool Lost => Score == MaxScore;
     private int MaxScore { get; }
 
@@ -14,6 +15,7 @@ public class Player {
         Score = 0;
         IsTurn = false;
         SetShot = false;
+        IsAi = false;
         MaxScore = playerCount switch {
             2 => 5,
             3 => 4,

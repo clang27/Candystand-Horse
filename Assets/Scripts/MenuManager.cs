@@ -142,6 +142,7 @@ public class MenuManager : MonoBehaviour {
             case GameMode.Online:
                 break;
             case GameMode.Ai:
+                GameManager.Instance.GoToAi();
                 break;
             default:
                 throw new ArgumentOutOfRangeException();

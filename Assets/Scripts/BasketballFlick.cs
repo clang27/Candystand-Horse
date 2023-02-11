@@ -31,6 +31,12 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         Move(pos);
     }
 
+    private void Update() {
+        if (_ai.enabled) return;
+        
+        _ai.enabled = Input.GetKeyDown(KeyCode.A);
+    }
+
     public void OnPointerDown(PointerEventData eventData) {
         if (MenuManager.InMenu || _ai.enabled) return;
         
@@ -90,7 +96,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         Color.RGBToHSV(_ballSpriteRenderer.color, out var h, out var s, out _);
         _ballSpriteRenderer.color = Color.HSVToRGB(h, s, 1f);
         _startClickPoint = position;
-        _startBallPoint = _ballTransform.position;
+        _startBallPoint = _rigidbody.position;
         ResetRigidbody();
         _arrowSpriteRenderer.enabled = true;
             
@@ -116,7 +122,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         _rigidbody.position = Vector2.MoveTowards(
             _rigidbody.position, 
             newBallLocation,
-            _moveAcceleration);
+            _moveAcceleration * (_ai.enabled ? 0.3f : 1f));
 
         if (_shooting) {
             if (Vector2.Distance(_startBallPoint, newBallLocation) > _maxDistance)
@@ -136,7 +142,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
     }
 
     public void ResetShotPosition() {
-        _rigidbody.position = _startClickPoint;
+        _rigidbody.position = _startBallPoint;
         ResetRigidbody();
     }
 
@@ -159,5 +165,13 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
 
     public void ResetGravity() {
         _rigidbody.gravityScale = 1f;
+    }
+
+    public float GetMaxShotDistance() {
+        return _maxDistance;
+    }
+    
+    public float GetShotForce() {
+        return _flickForce;
     }
 }

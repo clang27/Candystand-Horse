@@ -16,6 +16,7 @@ public class GameManager : MonoBehaviour {
     private Transform _cameraTransform;
     private AudioSource _audioSource;
     private Blindfold _blindfold;
+    private AiController _aiController;
     private List<Player> _players = new();
     private bool _shotMade { get; set; }
     private bool _incorrectShot { get; set; }
@@ -26,6 +27,7 @@ public class GameManager : MonoBehaviour {
 
         _audioSource = GetComponent<AudioSource>();
         _basketball = FindObjectOfType<BasketballFlick>();
+        _aiController = _basketball.GetComponent<AiController>();
         _boombox = FindObjectOfType<Boombox>();
         _blindfold = FindObjectOfType<Blindfold>();
         _cameraTransform = FindObjectOfType<Camera>().transform;
@@ -48,6 +50,20 @@ public class GameManager : MonoBehaviour {
         
         
         _players[0].IsTurn = true;
+        
+        GameUiManager.Instance.UpdateScore(_players);
+        MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
+    }
+
+    public void GoToAi() {
+        Mode = GameMode.Ai;
+        ResetScene(Color.red);
+        
+        _players.Add(new Player("P1", 2));
+        _players.Add(new Player("AI", 2));
+        
+        _players[0].IsTurn = true;
+        _players[1].IsAi = true;
         
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
@@ -124,12 +140,13 @@ public class GameManager : MonoBehaviour {
         }
         
         Player.GoToNextPlayer(_players);
-        
+
         if (_players.Count(p => p.Lost) == _players.Count - 1) {
             GameUiManager.Instance.ShowBanner(Player.CurrentPlayer(_players).Name + " Wins!!", 12f);
             _audioSource.PlayOneShot(_applause);
         } else {
             GameUiManager.Instance.ShowBanner(Player.CurrentPlayer(_players).Name + "'s Turn", 2f);
+            _aiController.enabled = Player.CurrentPlayer(_players).IsAi;
             switch (_players.IndexOf(Player.CurrentPlayer(_players))) {
                 case 0: _basketball.ChangeColor(Color.red); break;
                 case 1: _basketball.ChangeColor(Color.green); break;
@@ -176,6 +193,8 @@ public class GameManager : MonoBehaviour {
     }
     public void StartedShot() {
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), !MenuManager.Instance.BoomboxEnabled);
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Wall"), false);
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Net"), false);
         TurnPhase = TurnPhase.Charging;
         
         if (Mode == GameMode.Practice)
@@ -183,12 +202,12 @@ public class GameManager : MonoBehaviour {
         else
             TrickShotsSelector.Instance.ActivateButton(false);
         
-        if (TrickShotsSelector.Instance.BlindfoldIsOn())
+        if (TrickShotsSelector.Instance.HasShot("Blindfolded"))
             _blindfold.PutOn(true);
     }
 
     public void EndedShot() {
-        if (TrickShotsSelector.Instance.BlindfoldIsOn())
+        if (TrickShotsSelector.Instance.HasShot("Blindfolded"))
             _blindfold.PutOn(false);
         
         TurnPhase = TurnPhase.Shooting;
@@ -196,6 +215,9 @@ public class GameManager : MonoBehaviour {
 
     public void StartedMove() {
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), true);
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Wall"), _aiController.enabled);
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Net"), _aiController.enabled);
+        
         TurnPhase = TurnPhase.Moving;
         if (Mode == GameMode.Practice)
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();

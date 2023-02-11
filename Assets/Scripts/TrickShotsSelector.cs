@@ -56,7 +56,7 @@ public class TrickShotsSelector : MonoBehaviour {
     }
 
     public void RemoveShotIfExists(TrickShot shot2) {
-        if (!HasShot(shot2)) return;
+        if (!HasShot(shot2.Name)) return;
         
         Tricks.Remove(Tricks.First(shot1 => shot1.Name.Equals(shot2.Name)));
         UpdateListText();
@@ -68,8 +68,8 @@ public class TrickShotsSelector : MonoBehaviour {
         UpdateListText();
     }
 
-    public bool HasShot(TrickShot shot2) {
-        return Tricks.Any(shot1 => shot1.Name.Equals(shot2.Name));
+    public bool HasShot(string n) {
+        return Tricks.Any(shot => shot.name.Equals(n));
     }
     
     public bool AllAccomplished() {
@@ -78,9 +78,5 @@ public class TrickShotsSelector : MonoBehaviour {
             trick.Shots.Sum(s => s.CurrentOccurrences) == trick.TargetOccurrences:
             trick.Shots.Sum(s => s.CurrentOccurrences) >= trick.TargetOccurrences
         );
-    }
-
-    public bool BlindfoldIsOn() {
-        return Tricks.Any(shot => shot.name.Equals("Blindfolded"));
     }
 }
