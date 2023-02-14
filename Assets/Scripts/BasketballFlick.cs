@@ -116,7 +116,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         _rigidbody.position = Vector2.MoveTowards(
             _rigidbody.position, 
             newBallLocation,
-            _moveAcceleration * (_ai.enabled ? 0.3f : 1f) * Time.fixedDeltaTime);
+            _moveAcceleration * (_ai.enabled ? 0.6f : 1f) * Time.fixedDeltaTime);
 
         if (_shooting) {
             if (Vector2.Distance(_startBallPoint, newBallLocation) > _maxDistance)
