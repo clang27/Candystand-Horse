@@ -31,12 +31,6 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         Move(pos);
     }
 
-    private void Update() {
-        if (_ai.enabled) return;
-        
-        _ai.enabled = Input.GetKeyDown(KeyCode.A);
-    }
-
     public void OnPointerDown(PointerEventData eventData) {
         if (MenuManager.InMenu || _ai.enabled) return;
         
@@ -122,7 +116,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         _rigidbody.position = Vector2.MoveTowards(
             _rigidbody.position, 
             newBallLocation,
-            _moveAcceleration * (_ai.enabled ? 0.3f : 1f));
+            _moveAcceleration * (_ai.enabled ? 0.3f : 1f) * Time.fixedDeltaTime);
 
         if (_shooting) {
             if (Vector2.Distance(_startBallPoint, newBallLocation) > _maxDistance)

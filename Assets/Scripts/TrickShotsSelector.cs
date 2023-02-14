@@ -69,7 +69,7 @@ public class TrickShotsSelector : MonoBehaviour {
     }
 
     public bool HasShot(string n) {
-        return Tricks.Any(shot => shot.name.Equals(n));
+        return Tricks.Any(shot => shot.Name.Equals(n));
     }
     
     public bool AllAccomplished() {

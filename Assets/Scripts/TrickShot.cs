@@ -24,19 +24,20 @@ public class TrickShot: MonoBehaviour {
 
     private void Start() {
         Name = GetComponentInChildren<TextMeshProUGUI>().text;
-        _button.onClick.AddListener(delegate {
-            if (!Selected) {
-                ShowCheckmark(true);
-                _trickShotsSelector.AddShot(this);
-                foreach (var shot in conflictingShots) {
-                    shot.ShowCheckmark(false);
-                    _trickShotsSelector.RemoveShotIfExists(shot);
-                }
-            } else {
-                ShowCheckmark(false);
-                _trickShotsSelector.RemoveShotIfExists(this);
+        _button.onClick.AddListener(SelectShot);
+    }
+    public void SelectShot() {
+        if (!Selected) {
+            ShowCheckmark(true);
+            _trickShotsSelector.AddShot(this);
+            foreach (var shot in conflictingShots) {
+                shot.ShowCheckmark(false);
+                _trickShotsSelector.RemoveShotIfExists(shot);
             }
-        });
+        } else {
+            ShowCheckmark(false);
+            _trickShotsSelector.RemoveShotIfExists(this);
+        }
     }
     public void ClearCheckmark() {
         ShowCheckmark(false);

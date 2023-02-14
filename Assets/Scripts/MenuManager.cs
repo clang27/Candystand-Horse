@@ -26,7 +26,9 @@ public class MenuManager : MonoBehaviour {
     private int _levelNumber = 0;
     private int _playerCount = 2;
     public int ShotClock { get; private set; } = 15;
-    public bool BoomboxEnabled { get; private set; }
+
+    private bool _boomboxEnabled;
+    public bool BoomboxEnabled => _boomboxEnabled && GameManager.Instance.Mode != GameMode.Ai;
     private GameMode BufferedMode { get; set; }
     
     private const int MinPlayerCount = 2, MaxPlayerCount = 4;
@@ -98,7 +100,7 @@ public class MenuManager : MonoBehaviour {
         ShotClock = nextClock;
     }
     public void TurnOnBoombox(bool b) {
-        BoomboxEnabled = b;
+        _boomboxEnabled = b;
     }
     
     public void ToggleMenu() {
@@ -126,8 +128,15 @@ public class MenuManager : MonoBehaviour {
         
         _submenuOne.SetActive(false);
         _submenuTwo.SetActive(true);
+        
+        foreach(var item in _submenuTwo.GetComponentsInChildren<MenuItem>())
+            item.ActivateIfRightMode(BufferedMode);
     }
-    
+    public void Back() {
+        _submenuOne.SetActive(true);
+        _submenuTwo.SetActive(false);
+    }
+
     public void Play() {
         CloseMenu();
         TrickShotsSelector.Instance.ActivateButton(true);

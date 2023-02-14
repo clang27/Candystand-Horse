@@ -14,8 +14,47 @@ public class AiController : MonoBehaviour {
     private Rigidbody2D _rigidbody;
     private Collider2D _collider;
     private RaycastHit2D[] _hits;
+
+    private bool _waiting;
+
+    [Header("Accuracy and Height")]
+    [SerializeField] [Range(0.1f, 1f)] private float _initialAccuracy = 0.6f; 
+    [SerializeField] [Range(5f, 10f)] private float _initialHeight = 6f; 
+    
+    [Header("Off The Floor")] 
+    [SerializeField] [Range(0.1f, 3f)] private float _OTFHeightMult = 2f; 
+    [SerializeField] [Range(0.1f, 3f)] private float _OTFAccuracyMult = 1f; 
+    
+    [Header("Off The Floor x2")] 
+    [SerializeField] [Range(0.1f, 12f)] private float _OTF2HeightMult = 3f; 
+    [SerializeField] [Range(0.1f, 3f)] private float _OTF2AccuracyMult = 1f;
+    
+    [Header("Off The Wall")] 
+    [SerializeField] [Range(0.1f, 3f)] private float _OTWHeightMult = 0.9f; 
+    [SerializeField] [Range(0.1f, 3f)] private float _OTWAccuracyMult = 1f; 
+    
+    [Header("Blindfolded")] 
+    [SerializeField] [Range(0.1f, 3f)] private float _BHeightMult = 1f; 
+    [SerializeField] [Range(0.1f, 3f)] private float _BAccuracyMult = 0.5f; 
+    
+    [Header("Swish")] 
+    [SerializeField] [Range(0.1f, 3f)] private float _SHeightMult = 1.2f; 
+    [SerializeField] [Range(0.1f, 3f)] private float _SAccuracyMult = 1.5f; 
+    
+    [Header("Off The Rim")] 
+    [SerializeField] [Range(0.1f, 3f)] private float _OTRHeightMult = 0.9f; 
+    [SerializeField] [Range(0.1f, 3f)] private float _OTRAccuracyMult = 0.9f; 
+    
+    [Header("Backboard")] 
+    [SerializeField] [Range(0.1f, 3f)] private float _BBHeightMult = 1.2f; 
+    [SerializeField] [Range(0.1f, 3f)] private float _BBAccuracyMult = 0.9f; 
+    
+    [Header("Moonshot")] 
+    [SerializeField] [Range(0.1f, 3f)] private float _MHeightMult = 2f; 
+    [SerializeField] [Range(0.1f, 3f)] private float _MAccuracyMult = 1.05f; 
     
     private void Awake() {
+        _hits = new RaycastHit2D[4];
         _basketball = GetComponent<BasketballFlick>();
         _rigidbody = GetComponent<Rigidbody2D>();
         _collider = GetComponent<Collider2D>();
@@ -27,14 +66,27 @@ public class AiController : MonoBehaviour {
     }
 
     private IEnumerator WaitABitBeforeStarting() {
+        _waiting = true;
         yield return new WaitForSeconds(WaitTime);
+        _waiting = false;
         
         if (GameManager.Instance.TurnPhase is TurnPhase.Resting or TurnPhase.Moving)
             StartAiMoving();
         else if (GameManager.Instance.TurnPhase is TurnPhase.Responding)
-            StartAiShooting();
+            StartAiShooting(GetTrickshotBytes());
     }
+    
+    private IEnumerator WaitABitBeforeShooting() {
+        _waiting = true;
+        yield return new WaitForSeconds(WaitTime/4f);
+        _waiting = false;
+        
+        _basketball.StartShooting(_startShotPoint);
+    }
+    
     private void Update() {
+        if (_waiting) return;
+        
         switch (GameManager.Instance.TurnPhase) {
             case TurnPhase.Moving: {
                 for (var i = 0; i < _movePoints.Length-1; i++) {
@@ -47,7 +99,8 @@ public class AiController : MonoBehaviour {
                     if (_movePointIndex == _movePoints.Length) {
                         _movePointIndex = 0;
                         _basketball.EndMoving();
-                        StartAiShooting();
+                        SelectAiShot();
+                        StartAiShooting(GetTrickshotBytes());
                     }
                 }
 
@@ -71,46 +124,153 @@ public class AiController : MonoBehaviour {
         return Mathf.Abs(Vector2.Distance(point, _rigidbody.position)) < 0.01f;
     }
 
-    private void StartAiShooting() {
-        _startShotPoint = _rigidbody.position;
+    private int GetTrickshotBytes() {
+        var trickshots = 0b0000000;
+        
+        var shootOffTheWall = TrickShotsSelector.Instance.HasShot("Off The Wall");
+        var shootOffTheFloor = TrickShotsSelector.Instance.HasShot("Off The Floor");
+        var shootOffTheFloorTwice = TrickShotsSelector.Instance.HasShot("Off The Floor x2");
+        var shootOffTheRim = TrickShotsSelector.Instance.HasShot("Off The Rim");
+        var moonshot = TrickShotsSelector.Instance.HasShot("Moonshot");
+        var swish = TrickShotsSelector.Instance.HasShot("Swish");
+        var blindfolded = TrickShotsSelector.Instance.HasShot("Blindfolded");
+        var backboard = TrickShotsSelector.Instance.HasShot("Backboard");
 
-        var point = GetNewProjectionPoint(6f);
-        if (!GoodPoint(point) || TrickShotsSelector.Instance.HasShot("Off The Floor"))
-            point = GetNewProjectionPoint(12f, true);
-        if (!GoodPoint(point) || TrickShotsSelector.Instance.HasShot("Off The Floor x2"))
-            point = GetNewProjectionPoint(24f, true);
-        if (!GoodPoint(point) || TrickShotsSelector.Instance.HasShot("Off The Wall"))
-            point = GetNewProjectionPoint(12f, false, true);
-        if (!GoodPoint(point) || (TrickShotsSelector.Instance.HasShot("Off The Wall") && TrickShotsSelector.Instance.HasShot("Off The Floor")))
-            point = GetNewProjectionPoint(16f, true, true);
-        if (!GoodPoint(point) || (TrickShotsSelector.Instance.HasShot("Off The Wall") && TrickShotsSelector.Instance.HasShot("Off The Floor")))
-            point = GetNewProjectionPoint(16f, true, false, true);
+        if (shootOffTheWall)
+            trickshots ^= 0b00000001;
+        if (shootOffTheFloor)
+            trickshots ^= 0b00000010;
+        if (shootOffTheFloorTwice)
+            trickshots ^= 0b00000100;
+        if (shootOffTheRim)
+            trickshots ^= 0b00001000;
+        if (moonshot)
+            trickshots ^= 0b00010000;
+        if (swish)
+            trickshots ^= 0b00100000;
+        if (blindfolded)
+            trickshots ^= 0b01000000;
+        if (backboard)
+            trickshots ^= 0b10000000;
 
-        _endShotPoint = point;
-        _basketball.StartShooting(_startShotPoint);
+        return trickshots;
     }
 
-    private Vector2 GetNewProjectionPoint(float height, bool floorAngle = false, bool wallAngle1 = false, bool wallAngle2 = false) {
-        var endShotPoint = _goalPoint;
-        if (wallAngle1)
-            endShotPoint = Vector2.left * 50f;
-        if (wallAngle2)
-            endShotPoint = Vector2.right * 50f;
+    private void StartAiShooting(int trickshots) {
+        _startShotPoint = _rigidbody.position;
+
+        var shootOffTheWall = (trickshots & (1 << 0)) > 0;
+        var shootOffTheFloor = (trickshots & (1 << 1)) > 0;
+        var shootOffTheFloorTwice = (trickshots & (1 << 2)) > 0;
         
+        GetAccuracyAndHeight(trickshots, out var accuracy, out var height);
+
+        var point = GetNewProjectionPoint(
+            height, 
+            accuracy, 
+            shootOffTheFloor || shootOffTheFloorTwice,
+            shootOffTheWall);
+        
+        if (trickshots == 0b11111111) { // If can't find a good point, just drop ball :(
+            _endShotPoint = _startShotPoint;
+            StartCoroutine(WaitABitBeforeShooting());
+        } else if (!GoodTravelPoint(_startShotPoint, point)) {  // It will try to reach the point, but if it can't, it will try a new angle
+            StartAiShooting(trickshots+1);
+        } else { // Can do the shot
+            _endShotPoint = point;
+            StartCoroutine(WaitABitBeforeShooting());
+        }
+    }
+    
+    private bool CanMakeShot(int trickshots) {
+        _startShotPoint = _rigidbody.position;
+
+        var shootOffTheWall = (trickshots & (1 << 0)) > 0;
+        var shootOffTheFloor = (trickshots & (1 << 1)) > 0;
+        var shootOffTheFloorTwice = (trickshots & (1 << 2)) > 0;
+        
+        GetAccuracyAndHeight(trickshots, out var accuracy, out var height);
+
+        var point = GetNewProjectionPoint(
+            height, 
+            accuracy, 
+            shootOffTheFloor || shootOffTheFloorTwice,
+            shootOffTheWall);
+        
+        if (trickshots == 0b1111111) { // If can't find a good point, just drop ball :(
+            return false;
+        }  if (!GoodTravelPoint(_startShotPoint, point)) {  // It will try to reach the point, but if it can't, it will try a new angle
+            CanMakeShot(trickshots+1);
+        }
+        
+        return true;
+    }
+
+    private void GetAccuracyAndHeight(int trickshots, out float a, out float h) {
+        var shootOffTheWall = (trickshots & (1 << 0)) > 0;
+        var shootOffTheFloor = (trickshots & (1 << 1)) > 0;
+        var shootOffTheFloorTwice = (trickshots & (1 << 2)) > 0;
+        var shootOffTheRim = (trickshots & (1 << 3)) > 0;
+        var moonshot = (trickshots & (1 << 4)) > 0;
+        var swish = (trickshots & (1 << 5)) > 0;
+        var blindfolded = (trickshots & (1 << 6)) > 0;
+        var backboard = (trickshots & (1 << 7)) > 0;
+
+        a = _initialAccuracy;
+        h = _initialHeight;
+
+        if (shootOffTheWall) {
+            a *= _OTWAccuracyMult;
+            h *= _OTWHeightMult;
+        } if (shootOffTheFloor) {
+            a *= _OTFAccuracyMult;
+            h *= _OTFHeightMult;
+        } if (shootOffTheFloorTwice) {
+            a *= _OTF2AccuracyMult;
+            h *= _OTF2HeightMult;
+        } if (shootOffTheRim) {
+            a *= _OTRAccuracyMult;
+            h *= _OTRHeightMult;
+        } if (moonshot) {
+            a *= _MAccuracyMult;
+            h *= _MHeightMult;
+        } if (swish) {
+            a *= _SAccuracyMult;
+            h *= _SHeightMult;
+        } if (blindfolded) {
+            a *= _BAccuracyMult;
+            h *= _BHeightMult;
+        } if (backboard) {
+            a *= _BBAccuracyMult;
+            h *= _BBHeightMult;
+        }
+        
+        // Aim higher behind goal
+        if (_startShotPoint.x > _goalPoint.x)
+            h *= 2f;
+    }
+
+    private Vector2 GetNewProjectionPoint(float height, float accuracy, bool floorAngle = false, bool wallAngle = false) {
+        var endShotPoint = _goalPoint;
+        if (wallAngle) {
+            endShotPoint = Vector2.left * 70f;
+            if (endShotPoint.x > _startShotPoint.x)
+                endShotPoint *= -1f;
+        }
+
         GetProjection(
             _startShotPoint, 
-            (TrickShotsSelector.Instance.HasShot("Moonshot") ? height * 2f : height), 
+            height, 
             endShotPoint, 
+            accuracy,
             out var angle, 
             out var velocity
         );
         
-        if (floorAngle && wallAngle1)
-            angle = (3f * Mathf.PI / 2f) - (angle*0.95f);
-        else if (floorAngle)
-            angle = (3f * Mathf.PI / 2f) + (Mathf.PI/2f - (angle*0.95f));
-        else if (wallAngle1)
-            angle = (Mathf.PI) - (angle*1.1f);
+        if (floorAngle)
+            angle = (3f * Mathf.PI / 2f) + (Mathf.PI/2f - (angle*0.97f));
+        if (floorAngle && wallAngle)
+            angle = (5f * Mathf.PI) / 4f;
 
         velocity = Mathf.Clamp(velocity, 0f, _basketball.GetMaxShotDistance() * _basketball.GetShotForce());
         
@@ -120,35 +280,44 @@ public class AiController : MonoBehaviour {
         );
     }
 
-    private static void GetProjection(Vector2 startPoint, float maxHeight, Vector2 endPoint, out float a, out float v) {
+    private static void GetProjection(Vector2 startPoint, float maxHeight, Vector2 endPoint, float accuracy, out float a, out float v) {
         var gravity = -Physics2D.gravity.y;
-        maxHeight = Mathf.Max(startPoint.y + 1f, maxHeight);
+        maxHeight = Mathf.Max(startPoint.y + 2f, maxHeight);
+        
         // Starts lower because it gets pulled back
-        var initialHeight = startPoint.y - Random.Range((maxHeight - startPoint.y)/3f, (maxHeight - startPoint.y)/1.25f);
+        var initialHeight = startPoint.y - 
+                            Random.Range((maxHeight - startPoint.y)/(1f/accuracy), (maxHeight - startPoint.y)/(0.75f/accuracy));
         // Travels further because goal is higher than ground
-        var horizontalDistance = endPoint.x - startPoint.x + Random.Range((endPoint.x - startPoint.x)/6.5f,(endPoint.x - startPoint.x)/1.5f);
+        var horizontalDistance = endPoint.x - startPoint.x;
+        horizontalDistance += Random.Range((endPoint.x - startPoint.x)/(4f/accuracy),(endPoint.x - startPoint.x)/(2f/accuracy)) *
+                              ((endPoint.x > startPoint.x) ? 1f : -1f);
+        
         var yVelocity = Mathf.Sqrt((maxHeight - initialHeight) * 2f * gravity);
         var xVelocity = (horizontalDistance * gravity) / 
                         (yVelocity + Mathf.Sqrt((yVelocity*yVelocity) + (2f * gravity * initialHeight)));
         
         v = Mathf.Sqrt((xVelocity * xVelocity) + (yVelocity * yVelocity));
-        a = Mathf.Asin(yVelocity / v);
+        a = Mathf.Acos(xVelocity / v);
     }
     
-    private bool GoodPoint(Vector2 point) {
-        _hits = new RaycastHit2D[4];
-        return Physics2D.CircleCastNonAlloc(point, 0.7f, Vector2.zero, _hits, 0f, Avoid.layerMask) == 0;
+    private bool GoodTravelPoint(Vector2 startPoint, Vector2 endPoint) {
+        return Physics2D.CircleCastNonAlloc(startPoint, 0.7f, (endPoint - startPoint).normalized, 
+            _hits, Mathf.Abs(Vector2.Distance(startPoint, endPoint)), Avoid.layerMask) == 0;
+    }
+    
+    private bool GoodEndPoint(Vector2 endPoint) {
+        return Physics2D.CircleCastNonAlloc(endPoint, 0.7f, Vector2.zero,
+            _hits, 0f, Avoid.layerMask) == 0;
     }
     
     private void StartAiMoving() {
         _startMovePoint = _rigidbody.position;
-        _hits = new RaycastHit2D[4];
         var finalPoint = Vector2.zero;
         do {
             finalPoint = MenuManager.Instance.CurrentLevel.location +
                          new Vector3(Random.Range(-SearchRadius, SearchRadius),
                              Random.Range(-SearchRadius, SearchRadius), 0f);
-        } while (!GoodPoint(finalPoint));
+        } while (!GoodEndPoint(finalPoint));
 
         var pointsToVisit = new List<Vector2>();
 
@@ -157,5 +326,16 @@ public class AiController : MonoBehaviour {
         _movePoints = pointsToVisit.ToArray();
         
         _basketball.StartMoving(_startMovePoint);
+    }
+
+    private void SelectAiShot() {
+        foreach (var shot in FindObjectsOfType<TrickShot>()) {
+            if (!(Random.Range(0f, 1f) > 0.8f)) continue;
+            
+            shot.SelectShot();
+        }
+        
+        if (!CanMakeShot(GetTrickshotBytes()))
+            TrickShotsSelector.Instance.ClearTricks();
     }
 }
