@@ -20,7 +20,7 @@ public class GameManager : MonoBehaviour {
     private List<Player> _players = new();
     private bool _shotMade { get; set; }
     private bool _incorrectShot { get; set; }
-    public GameMode Mode { get; private set; }
+    public GameType Mode { get; private set; }
     
     private void Awake() {
         Instance = this;
@@ -37,12 +37,12 @@ public class GameManager : MonoBehaviour {
         GoToPractice();
     }
     public void GoToPractice() {
-        Mode = GameMode.Practice;
+        Mode = GameType.Practice;
         ResetScene(Color.HSVToRGB(0.07f, 1f, 1f));
     }
 
     public void GoToLocal(int playerCount) {
-        Mode = GameMode.Local;
+        Mode = GameType.Local;
         ResetScene(Color.red);
         
         for (var i = 0; i < playerCount; i++)
@@ -56,7 +56,7 @@ public class GameManager : MonoBehaviour {
     }
 
     public void GoToAi() {
-        Mode = GameMode.Ai;
+        Mode = GameType.Ai;
         ResetScene(Color.red);
         
         _players.Add(new Player("P1", 2));
@@ -162,7 +162,7 @@ public class GameManager : MonoBehaviour {
         _shotMade = true;
         _incorrectShot = !TrickShotsSelector.Instance.AllAccomplished();
         
-        if (Mode == GameMode.Practice) {
+        if (Mode == GameType.Practice) {
             if (_incorrectShot) {
                 _audioSource.Play();
                 GameUiManager.Instance.ShowBanner("Wrong Shot!", 3f);
@@ -177,7 +177,7 @@ public class GameManager : MonoBehaviour {
     public void ShotMissed() {
         _shotMade = false;
         
-        if (Mode == GameMode.Practice) {
+        if (Mode == GameType.Practice) {
             _basketball.ResetGravity();
             TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu);
             TurnPhase = TurnPhase.Resting;
@@ -197,7 +197,7 @@ public class GameManager : MonoBehaviour {
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Net"), false);
         TurnPhase = TurnPhase.Charging;
         
-        if (Mode == GameMode.Practice)
+        if (Mode == GameType.Practice)
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
         else
             TrickShotsSelector.Instance.ActivateButton(false);
@@ -219,7 +219,7 @@ public class GameManager : MonoBehaviour {
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Net"), _aiController.enabled);
         
         TurnPhase = TurnPhase.Moving;
-        if (Mode == GameMode.Practice)
+        if (Mode == GameType.Practice)
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
     }
 }

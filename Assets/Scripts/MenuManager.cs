@@ -11,7 +11,7 @@ public struct BasketballLevel {
 }
 
 [Serializable]
-public enum GameMode {
+public enum GameType {
     Local, Ai, Online, Practice
 }
 
@@ -28,8 +28,8 @@ public class MenuManager : MonoBehaviour {
     public int ShotClock { get; private set; } = 15;
 
     private bool _boomboxEnabled;
-    public bool BoomboxEnabled => _boomboxEnabled && GameManager.Instance.Mode != GameMode.Ai;
-    private GameMode BufferedMode { get; set; }
+    public bool BoomboxEnabled => _boomboxEnabled && GameManager.Instance.Mode != GameType.Ai;
+    private GameType BufferedMode { get; set; }
     
     private const int MinPlayerCount = 2, MaxPlayerCount = 4;
     private const int MinShotClock = 10, MaxShotClock = 30;
@@ -124,12 +124,12 @@ public class MenuManager : MonoBehaviour {
     }
 
     public void SelectMode(int mode) {
-        BufferedMode = (GameMode)mode;
+        BufferedMode = (GameType)mode;
         
         _submenuOne.SetActive(false);
         _submenuTwo.SetActive(true);
         
-        foreach(var item in _submenuTwo.GetComponentsInChildren<MenuItem>())
+        foreach(var item in _submenuTwo.GetComponentsInChildren<MenuLine>())
             item.ActivateIfRightMode(BufferedMode);
     }
     public void Back() {
@@ -142,15 +142,15 @@ public class MenuManager : MonoBehaviour {
         TrickShotsSelector.Instance.ActivateButton(true);
         
         switch (BufferedMode) {
-            case GameMode.Practice:
+            case GameType.Practice:
                 GameManager.Instance.GoToPractice();
                 break;
-            case GameMode.Local:
+            case GameType.Local:
                 GameManager.Instance.GoToLocal(_playerCount);
                 break;
-            case GameMode.Online:
+            case GameType.Online:
                 break;
-            case GameMode.Ai:
+            case GameType.Ai:
                 GameManager.Instance.GoToAi();
                 break;
             default:

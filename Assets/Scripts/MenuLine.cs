@@ -2,15 +2,15 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class MenuItem : MonoBehaviour {
-    [SerializeField] private List<GameMode> _modesAvailable;
+public class MenuLine : MonoBehaviour {
+    [SerializeField] private List<GameType> _modesAvailable;
     private CanvasGroup _canvasGroup;
 
     private void Awake() {
         _canvasGroup = GetComponent<CanvasGroup>();
     }
 
-    public void ActivateIfRightMode(GameMode mode) {
+    public void ActivateIfRightMode(GameType mode) {
         var b = _modesAvailable.Any(m => m.Equals(mode));
 
         _canvasGroup.interactable = b;

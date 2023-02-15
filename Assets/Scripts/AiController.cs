@@ -253,8 +253,11 @@ public class AiController : MonoBehaviour {
         }
         
         // Aim higher behind goal
-        if (_startShotPoint.x > _goalPoint.x)
+        if (_startShotPoint.x > _goalPoint.x) {
             h *= 2f;
+            a *= 1.1f;
+        }
+            
     }
 
     private Vector2 GetNewProjectionPoint(float height, float accuracy, bool floorAngle = false, bool wallAngle = false) {
