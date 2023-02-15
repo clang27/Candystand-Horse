@@ -21,7 +21,7 @@ public class MenuManager : MonoBehaviour {
     
     [SerializeField] private GameObject _menu;
     [SerializeField] private TextMeshProUGUI _levelTextMesh, _playerCountTextMesh, _shotClockTextMesh;
-    private GameObject _submenuOne, _submenuTwo;
+    private CanvasGroup _submenuOne, _submenuTwo, _multimenu, _joinmenu;
     
     private int _levelNumber = 0;
     private int _playerCount = 2;
@@ -54,8 +54,16 @@ public class MenuManager : MonoBehaviour {
         }
         
         _cameraTransform = FindObjectOfType<Camera>().transform;
-        _submenuOne = _menu.transform.GetChild(0).gameObject;
-        _submenuTwo = _menu.transform.GetChild(1).gameObject;
+        _submenuOne = _menu.transform.GetChild(0).GetComponent<CanvasGroup>();
+        _submenuTwo = _menu.transform.GetChild(1).GetComponent<CanvasGroup>();
+        _multimenu = _menu.transform.GetChild(2).GetComponent<CanvasGroup>();
+        _joinmenu = _menu.transform.GetChild(3).GetComponent<CanvasGroup>();
+    }
+
+    private void EnableMenu(CanvasGroup cg, bool b) {
+        cg.alpha = (b) ? 1f : 0f;
+        cg.interactable = b;
+        cg.blocksRaycasts = b;
     }
 
     private void SelectLevel(int levelNumber) {
@@ -110,31 +118,43 @@ public class MenuManager : MonoBehaviour {
             TrickShotsSelector.Instance.CloseMenu();
         
         TrickShotsSelector.Instance.ActivateButton(!InMenu && GameManager.Instance.TurnPhase is not TurnPhase.Shooting);
-        _submenuOne.SetActive(true);
-        _submenuTwo.SetActive(false);
+        Back();
         _menu.SetActive(InMenu);
     }
 
     private void CloseMenu() {
         InMenu = false;
         
-        _submenuOne.SetActive(true);
-        _submenuTwo.SetActive(false);
+        Back();
         _menu.SetActive(false);
     }
 
     public void SelectMode(int mode) {
         BufferedMode = (GameType)mode;
-        
-        _submenuOne.SetActive(false);
-        _submenuTwo.SetActive(true);
-        
-        foreach(var item in _submenuTwo.GetComponentsInChildren<MenuLine>())
+
+        foreach(var item in _menu.GetComponentsInChildren<MenuLine>())
             item.ActivateIfRightMode(BufferedMode);
+        
+        EnableMenu(_submenuOne, false);
+        EnableMenu(_submenuTwo, BufferedMode != GameType.Online);
+        EnableMenu(_multimenu, BufferedMode == GameType.Online);
     }
+
+    public void Host() {
+        EnableMenu(_multimenu, false);
+        EnableMenu(_submenuTwo, true);
+    }
+
+    public void Join() {
+        EnableMenu(_multimenu, false);
+        EnableMenu(_joinmenu, true);
+    }
+    
     public void Back() {
-        _submenuOne.SetActive(true);
-        _submenuTwo.SetActive(false);
+        EnableMenu(_submenuOne, true);
+        EnableMenu(_submenuTwo, false);
+        EnableMenu(_multimenu, false);
+        EnableMenu(_joinmenu, false);
     }
 
     public void Play() {
@@ -149,6 +169,7 @@ public class MenuManager : MonoBehaviour {
                 GameManager.Instance.GoToLocal(_playerCount);
                 break;
             case GameType.Online:
+                GameManager.Instance.GoToOnline();
                 break;
             case GameType.Ai:
                 GameManager.Instance.GoToAi();

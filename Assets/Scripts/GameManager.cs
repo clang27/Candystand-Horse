@@ -11,8 +11,8 @@ public class GameManager : MonoBehaviour {
     [SerializeField] private AudioClip _applause, _whistle;
     public static GameManager Instance;
     public TurnPhase TurnPhase { get; set; }
-    private BasketballFlick _basketball;
-    private Boombox _boombox;
+    private BasketballFlick _localBasketball;
+    private Boombox _localBoombox;
     private Transform _cameraTransform;
     private AudioSource _audioSource;
     private Blindfold _blindfold;
@@ -21,14 +21,15 @@ public class GameManager : MonoBehaviour {
     private bool _shotMade { get; set; }
     private bool _incorrectShot { get; set; }
     public GameType Mode { get; private set; }
+    private Coroutine _pauseRoutine;
     
     private void Awake() {
         Instance = this;
 
         _audioSource = GetComponent<AudioSource>();
-        _basketball = FindObjectOfType<BasketballFlick>();
-        _aiController = _basketball.GetComponent<AiController>();
-        _boombox = FindObjectOfType<Boombox>();
+        _localBasketball = FindObjectOfType<BasketballFlick>();
+        _aiController = _localBasketball.GetComponent<AiController>();
+        _localBoombox = FindObjectOfType<Boombox>();
         _blindfold = FindObjectOfType<Blindfold>();
         _cameraTransform = FindObjectOfType<Camera>().transform;
     }
@@ -38,12 +39,14 @@ public class GameManager : MonoBehaviour {
     }
     public void GoToPractice() {
         Mode = GameType.Practice;
-        ResetScene(Color.HSVToRGB(0.07f, 1f, 1f));
+        ResetScene();
+        _localBasketball.ChangeColor(Color.HSVToRGB(0.07f, 1f, 1f));
     }
 
     public void GoToLocal(int playerCount) {
         Mode = GameType.Local;
-        ResetScene(Color.red);
+        ResetScene();
+        _localBasketball.ChangeColor(Color.red);
         
         for (var i = 0; i < playerCount; i++)
             _players.Add(new Player("P" + (i + 1), playerCount));
@@ -57,7 +60,8 @@ public class GameManager : MonoBehaviour {
 
     public void GoToAi() {
         Mode = GameType.Ai;
-        ResetScene(Color.red);
+        ResetScene();
+        _localBasketball.ChangeColor(Color.red);
         
         _players.Add(new Player("P1", 2));
         _players.Add(new Player("AI", 2));
@@ -68,8 +72,19 @@ public class GameManager : MonoBehaviour {
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
     }
+    public void GoToOnline() {
+        Mode = GameType.Online;
+        ResetScene();
+        _localBasketball.gameObject.SetActive(false);
+        _localBoombox.gameObject.SetActive(false);
+    }
 
-    private void ResetScene(Color ballColor) {
+    private void ResetScene() {
+        if (_pauseRoutine != null) {
+            StopCoroutine(_pauseRoutine);
+            _pauseRoutine = null;
+        }
+        
         _shotMade = false;
         _incorrectShot = false;
         TurnPhase = TurnPhase.Resting;
@@ -81,10 +96,12 @@ public class GameManager : MonoBehaviour {
         MenuManager.Instance.CurrentLevel.timer.EndCountdown();
         
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), MenuManager.Instance.BoomboxEnabled);
-        _basketball.ResetPosition(MenuManager.Instance.CurrentLevel.ballRespawnPoint);
-        _boombox.ResetPosition(MenuManager.Instance.CurrentLevel.boomboxRespawnPoint);
-        _basketball.ChangeColor(ballColor);
         
+        _localBasketball.gameObject.SetActive(true);
+        _localBoombox.gameObject.SetActive(true);
+        _localBasketball.ResetPosition(MenuManager.Instance.CurrentLevel.ballRespawnPoint);
+        _localBoombox.ResetPosition(MenuManager.Instance.CurrentLevel.boomboxRespawnPoint);
+
         _cameraTransform.position = new Vector3(
             MenuManager.Instance.CurrentLevel.location.x,
             MenuManager.Instance.CurrentLevel.location.y,
@@ -110,12 +127,12 @@ public class GameManager : MonoBehaviour {
         TrickShotsSelector.Instance.ActivateButton(false);
         TrickShotsSelector.Instance.CloseMenu();
         TurnPhase = TurnPhase.Transitioning;
-        _basketball.CancelActions();
+        _localBasketball.CancelActions();
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.EndCountdown();
         MenuManager.Instance.CurrentLevel.goal.ResetGoal();
 
-        StartCoroutine(PauseSwitchingTurns());
+        _pauseRoutine = StartCoroutine(PauseSwitchingTurns());
     }
 
     private IEnumerator PauseSwitchingTurns() {
@@ -127,11 +144,11 @@ public class GameManager : MonoBehaviour {
             if (!Player.SomeHasAShotSet(_players) || Player.PlayerWhoSetAShot(_players) == Player.NextPlayer(_players)) {
                 Player.ClearAllShots(_players);
                 TrickShotsSelector.Instance.ClearTricks();
-                _basketball.ResetGravity();
+                _localBasketball.ResetGravity();
                 TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu);
                 TurnPhase = TurnPhase.Resting;
             } else {
-                _basketball.ResetShotPosition();
+                _localBasketball.ResetShotPosition();
                 TrickShotsSelector.Instance.ActivateButton(false);
                 TurnPhase = TurnPhase.Responding;
             }
@@ -148,10 +165,10 @@ public class GameManager : MonoBehaviour {
             GameUiManager.Instance.ShowBanner(Player.CurrentPlayer(_players).Name + "'s Turn", 2f);
             _aiController.enabled = Player.CurrentPlayer(_players).IsAi;
             switch (_players.IndexOf(Player.CurrentPlayer(_players))) {
-                case 0: _basketball.ChangeColor(Color.red); break;
-                case 1: _basketball.ChangeColor(Color.green); break;
-                case 2: _basketball.ChangeColor(Color.yellow); break;
-                case 3: _basketball.ChangeColor(Color.cyan); break;
+                case 0: _localBasketball.ChangeColor(Color.red); break;
+                case 1: _localBasketball.ChangeColor(Color.green); break;
+                case 2: _localBasketball.ChangeColor(Color.yellow); break;
+                case 3: _localBasketball.ChangeColor(Color.cyan); break;
             }
             GameUiManager.Instance.UpdateScore(_players);
             MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
@@ -178,7 +195,7 @@ public class GameManager : MonoBehaviour {
         _shotMade = false;
         
         if (Mode == GameType.Practice) {
-            _basketball.ResetGravity();
+            _localBasketball.ResetGravity();
             TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu);
             TurnPhase = TurnPhase.Resting;
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
@@ -188,7 +205,7 @@ public class GameManager : MonoBehaviour {
     }
     
     public void OutOfBounds() {
-        _basketball.ResetPosition(MenuManager.Instance.CurrentLevel.ballRespawnPoint);
+        _localBasketball.ResetPosition(MenuManager.Instance.CurrentLevel.ballRespawnPoint);
         ShotMissed();
     }
     public void StartedShot() {

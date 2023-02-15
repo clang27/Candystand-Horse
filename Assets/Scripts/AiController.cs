@@ -110,7 +110,7 @@ public class AiController : MonoBehaviour {
                 // Debug.DrawLine(_startShotPoint, _goalPoint, Color.red);
                 // Debug.DrawLine(_startShotPoint, _endShotPoint, Color.green);
                 
-                Debug.Log(_startShotPoint + " to " + _endShotPoint);
+                // Debug.Log(_startShotPoint + " to " + _endShotPoint);
                 _basketball.Move(_endShotPoint);
                 if (ReachedPoint(_endShotPoint)) {
                     _basketball.EndShooting();

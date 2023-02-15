@@ -11,9 +11,11 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
     private Rigidbody2D _rigidbody;
     private Vector2 _startClickPoint, _startBallPoint;
     private bool _moving, _shooting;
-    private Collider2D[] _results = new Collider2D[2];
     private AiController _ai;
     private Vector2 _ballAimDirection => _startBallPoint - (Vector2)_ballTransform.position;
+    private Camera _camera;
+    private Vector2 _mousePoint;
+    
     private void Awake() {
         _ballTransform = transform;
         _arrowTransform = _ballTransform.GetChild(0);
@@ -21,30 +23,30 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         _ballSpriteRenderer = GetComponent<SpriteRenderer>();
         _ai = GetComponent<AiController>();
         _rigidbody = GetComponent<Rigidbody2D>();
+        _camera = FindObjectOfType<Camera>();
+    }
+    private void Update() {
+        if (_ai.enabled) return;
+        
+        _mousePoint = _camera.ScreenToWorldPoint(Input.mousePosition);
     }
 
     private void FixedUpdate() {
         if (!_moving && !_shooting) return;
         if (_ai.enabled) return;
         
-        var pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Move(pos);
+        Move(_mousePoint);
     }
 
     public void OnPointerDown(PointerEventData eventData) {
         if (MenuManager.InMenu || _ai.enabled) return;
-        
-        if (TrickShotsSelector.InMenu)
-            TrickShotsSelector.Instance.CloseMenu();
 
-        var pos = Camera.main.ScreenToWorldPoint(eventData.pressPosition);
-        
         if (eventData.button == PointerEventData.InputButton.Right && 
-                    (GameManager.Instance.TurnPhase is TurnPhase.Moving or TurnPhase.Resting)) {
-            StartMoving(pos);
+            (GameManager.Instance.TurnPhase is TurnPhase.Moving or TurnPhase.Resting)) {
+            StartMoving(_mousePoint);
         } else if (eventData.button == PointerEventData.InputButton.Left && 
                     (GameManager.Instance.TurnPhase is TurnPhase.Moving or TurnPhase.Resting or TurnPhase.Responding)) {
-            StartShooting(pos);
+            StartShooting(_mousePoint);
         }
     }
 
@@ -78,6 +80,9 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         _startClickPoint = position;
         _startBallPoint = _ballTransform.position;
         ResetRigidbody();
+        
+        if (TrickShotsSelector.InMenu)
+            TrickShotsSelector.Instance.CloseMenu();
     }
 
     public void EndMoving() {
@@ -97,6 +102,9 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 0.5f, 1f);
         //_arrowTransform.localScale = new Vector3((_ballAimDirection * 0.0795f).magnitude + 0.1f, _arrowTransform.localScale.y, _arrowTransform.localScale.z);
         _arrowTransform.rotation = Quaternion.Euler(0, 0, Mathf.Rad2Deg * Mathf.Atan2(_ballAimDirection.y, _ballAimDirection.x));
+        
+        if (TrickShotsSelector.InMenu)
+            TrickShotsSelector.Instance.CloseMenu();
     }
 
     public void EndShooting() {
