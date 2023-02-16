@@ -12,7 +12,7 @@ public struct BasketballLevel {
 
 [Serializable]
 public enum GameType {
-    Local, Ai, Online, Practice
+    Local, Ai, OnlineLobby, Practice, OnlineMatch
 }
 
 public class MenuManager : MonoBehaviour {
@@ -30,6 +30,7 @@ public class MenuManager : MonoBehaviour {
     private bool _boomboxEnabled;
     public bool BoomboxEnabled => _boomboxEnabled && GameManager.Instance.Mode != GameType.Ai;
     private GameType BufferedMode { get; set; }
+    private bool BufferedHost { get; set; }
     
     private const int MinPlayerCount = 2, MaxPlayerCount = 4;
     private const int MinShotClock = 10, MaxShotClock = 30;
@@ -136,16 +137,18 @@ public class MenuManager : MonoBehaviour {
             item.ActivateIfRightMode(BufferedMode);
         
         EnableMenu(_submenuOne, false);
-        EnableMenu(_submenuTwo, BufferedMode != GameType.Online);
-        EnableMenu(_multimenu, BufferedMode == GameType.Online);
+        EnableMenu(_submenuTwo, BufferedMode != GameType.OnlineLobby);
+        EnableMenu(_multimenu, BufferedMode == GameType.OnlineLobby);
     }
 
     public void Host() {
+        BufferedHost = true;
         EnableMenu(_multimenu, false);
         EnableMenu(_submenuTwo, true);
     }
 
     public void Join() {
+        BufferedHost = false;
         EnableMenu(_multimenu, false);
         EnableMenu(_joinmenu, true);
     }
@@ -168,8 +171,8 @@ public class MenuManager : MonoBehaviour {
             case GameType.Local:
                 GameManager.Instance.GoToLocal(_playerCount);
                 break;
-            case GameType.Online:
-                GameManager.Instance.GoToOnline();
+            case GameType.OnlineLobby:
+                GameManager.Instance.GoToOnline(BufferedHost);
                 break;
             case GameType.Ai:
                 GameManager.Instance.GoToAi();

@@ -47,6 +47,26 @@ public class GameUiManager : MonoBehaviour {
         _hideNiceShotRoutine = StartCoroutine(HideShotBanner(time));
     }
 
+    public void ShowLoading(bool b) {
+        if (!b) {
+            _niceShotRectTransform.sizeDelta = Vector2.zero;
+            _niceShotCanvas.alpha = 0f;
+            return;
+        }
+
+        // Already showing, so hide and restart banner timer
+        if (_niceShotCanvas.alpha > 0.9f) {
+            _niceShotRectTransform.sizeDelta = Vector2.zero;
+            _niceShotCanvas.alpha = 0f;
+            LeanTween.cancel(_niceShotRectTransform);
+            StopCoroutine(_hideNiceShotRoutine);
+        }
+        
+        _message.text = "Loading...";
+        _niceShotCanvas.alpha = 1f;
+        LeanTween.size(_niceShotRectTransform, _startSize, _tweenTime).setEase(_tweenType);
+    }
+
     public void UpdateScore(List<Player> players) {
         // For clearing canvases if player count is less than 4
         ClearPlayers();

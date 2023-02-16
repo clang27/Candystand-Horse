@@ -22,6 +22,7 @@ public class GameManager : MonoBehaviour {
     private bool _incorrectShot { get; set; }
     public GameType Mode { get; private set; }
     private Coroutine _pauseRoutine;
+    private MPSpawner _mpSpawner;
     
     private void Awake() {
         Instance = this;
@@ -32,6 +33,8 @@ public class GameManager : MonoBehaviour {
         _localBoombox = FindObjectOfType<Boombox>();
         _blindfold = FindObjectOfType<Blindfold>();
         _cameraTransform = FindObjectOfType<Camera>().transform;
+
+        _mpSpawner = FindObjectOfType<MPSpawner>();
     }
 
     private void Start() {
@@ -72,11 +75,13 @@ public class GameManager : MonoBehaviour {
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
     }
-    public void GoToOnline() {
-        Mode = GameType.Online;
+    public void GoToOnline(bool host) {
+        Mode = GameType.OnlineLobby;
         ResetScene();
         _localBasketball.gameObject.SetActive(false);
         _localBoombox.gameObject.SetActive(false);
+        
+        _mpSpawner.StartGame(host);
     }
 
     private void ResetScene() {
@@ -101,6 +106,7 @@ public class GameManager : MonoBehaviour {
         _localBoombox.gameObject.SetActive(true);
         _localBasketball.ResetPosition(MenuManager.Instance.CurrentLevel.ballRespawnPoint);
         _localBoombox.ResetPosition(MenuManager.Instance.CurrentLevel.boomboxRespawnPoint);
+        _mpSpawner.EndGame();
 
         _cameraTransform.position = new Vector3(
             MenuManager.Instance.CurrentLevel.location.x,
@@ -179,7 +185,7 @@ public class GameManager : MonoBehaviour {
         _shotMade = true;
         _incorrectShot = !TrickShotsSelector.Instance.AllAccomplished();
         
-        if (Mode == GameType.Practice) {
+        if (Mode is GameType.Practice or GameType.OnlineLobby) {
             if (_incorrectShot) {
                 _audioSource.Play();
                 GameUiManager.Instance.ShowBanner("Wrong Shot!", 3f);
@@ -194,12 +200,12 @@ public class GameManager : MonoBehaviour {
     public void ShotMissed() {
         _shotMade = false;
         
-        if (Mode == GameType.Practice) {
+        if (Mode is GameType.Practice) {
             _localBasketball.ResetGravity();
             TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu);
             TurnPhase = TurnPhase.Resting;
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
-        } else {
+        } else if (Mode is not GameType.OnlineLobby){
             NextPlayersTurn();
         }
     }

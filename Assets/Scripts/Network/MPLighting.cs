@@ -1,17 +1,18 @@
 using UnityEngine;
 
-public class Lighting : MonoBehaviour {
+public class MPLighting : MonoBehaviour {
     private Transform _shadowTransform, _lightingTransform;
     private Vector3 _startScale;
     
     private void Awake() {
-        _shadowTransform = transform.GetChild(1);
-        _lightingTransform = transform.GetChild(2);
+        _shadowTransform = transform.parent.GetChild(1);
+        _lightingTransform = transform.GetChild(1);
         _startScale = _shadowTransform.localScale;
     }
     
     private void Update() {
-        var hit = Physics2D.Raycast(_shadowTransform.parent.position, Vector2.down, Mathf.Infinity, LayerMask.GetMask("Floor"));
+        var hit = Physics2D.Raycast(_shadowTransform.parent.position, Vector2.down, 
+            Mathf.Infinity, LayerMask.GetMask("Floor"));
 
         if (hit) {
             _shadowTransform.position = hit.point;
