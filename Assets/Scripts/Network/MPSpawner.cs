@@ -12,8 +12,7 @@ public struct NetworkInputData : INetworkInput {
 public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
     [SerializeField] private NetworkPrefabRef _ballPrefab;
     private Dictionary<PlayerRef, NetworkObject> _spawnedBalls = new();
-    private MPBasketball _hostsBall;
-    
+    private MPBasketball _myBall;
     private NetworkRunner _runner;
     public async void StartGame(bool host) {
         // Create the Fusion runner and let it know that we will be providing user input
@@ -24,6 +23,7 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
         
         // Start or join (depends on gamemode) a session with a specific name
         await _runner.StartGame(new StartGameArgs() {
+            Address = NetAddress.Any(),
             GameMode = (host) ? GameMode.Host : GameMode.Client,
             SessionName = "TestRoom",
             Scene = 0,
@@ -45,7 +45,7 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
             var spawnPosition = MenuManager.Instance.CurrentLevel.ballRespawnPoint;
             var networkPlayerObject = runner.Spawn(_ballPrefab, spawnPosition, Quaternion.identity, player);
             if (_spawnedBalls.Count == 0) {
-                _hostsBall = networkPlayerObject.GetComponent<MPBasketball>();
+                _myBall = networkPlayerObject.GetComponent<MPBasketball>();
             }
             _spawnedBalls.Add(player, networkPlayerObject);
         }
@@ -59,12 +59,12 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
     }
 
     public void OnInput(NetworkRunner runner, NetworkInput input) {
-        if (!_hostsBall) return;
+        if (!_myBall) return;
         
         var data = new NetworkInputData {
-            Moving = _hostsBall.Moving,
-            Shooting = _hostsBall.Shooting,
-            AimPoint = _hostsBall.AimPoint
+            Moving = _myBall.Moving,
+            Shooting = _myBall.Shooting,
+            AimPoint = _myBall.AimPoint
         };
 
         input.Set(data);

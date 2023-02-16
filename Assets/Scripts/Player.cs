@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class Player {
     public string Name { get; }
@@ -9,6 +10,7 @@ public class Player {
     public bool IsAi { get; set; }
     public bool Lost => Score == MaxScore;
     private int MaxScore { get; }
+    public Color Color { get; }
 
     public Player(string name, int playerCount) {
         Name = name;
@@ -16,6 +18,15 @@ public class Player {
         IsTurn = false;
         SetShot = false;
         IsAi = false;
+
+        Color = playerCount switch {
+            1 => Color.red,
+            2 => Color.green,
+            3 => Color.yellow,
+            4 => Color.cyan,
+            _ => Color.HSVToRGB(0.07f, 1f, 1f)
+        };
+
         MaxScore = playerCount switch {
             2 => 5,
             3 => 4,

@@ -19,7 +19,7 @@ public class Floor : MonoBehaviour, IShot {
         CurrentOccurrences++;
 
         if (col.relativeVelocity.y < 0f && col.relativeVelocity.y > -minimumSpeed) {
-            GameManager.Instance.ShotMissed();
+            GameManager.Instance.ShotMissed(col.gameObject);
         }
     }
 

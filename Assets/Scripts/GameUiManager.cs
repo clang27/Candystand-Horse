@@ -87,12 +87,16 @@ public class GameUiManager : MonoBehaviour {
 
         for (var i = 0; i < players.Count; i++) {
             _turnCanvases[i].alpha = (players[i].IsTurn) ? 1f : 0.2f;
-            _turnCanvases[i].transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = players[i].Name;
 
             var animalText = word.Substring(0, players[i].Score);
             animalText += blanks.Substring(0, word.Length - players[i].Score);
-            
-            _turnCanvases[i].transform.GetChild(1).GetComponent<TextMeshProUGUI>().text = animalText;
+
+            var nameMesh = _turnCanvases[i].transform.GetChild(0).GetComponent<TextMeshProUGUI>();
+            nameMesh.text = players[i].Name;
+            nameMesh.color = players[i].Color;
+                
+            var animalMesh = _turnCanvases[i].transform.GetChild(1).GetComponent<TextMeshProUGUI>();
+            animalMesh.text = animalText;
         }
     }
 

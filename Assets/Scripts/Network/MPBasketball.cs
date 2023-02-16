@@ -1,12 +1,19 @@
+using System.Collections.Generic;
 using Fusion;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnterHandler, IPointerExitHandler, IPointerUpHandler {
+    public static List<Player> Players { get; } = new();
+    public Player Player { get; set; }
+    
     [SerializeField] private float _moveAcceleration = 2f;
     [SerializeField] private float _flickForce = 20f;
     [SerializeField] private float _maxDistance = 2f;
-    
+    [Networked(OnChanged = nameof(OnScoreChanged))] public int Score { get; set; }
+    [Networked(OnChanged = nameof(OnTurnChanged))] public bool IsTurn { get; set; }
+    [Networked(OnChanged = nameof(OnSetShotChanged))] public bool SetShot { get; set; }
+
     private Rigidbody2D _rigidbody;
     private Transform _arrowTransform, _ballTransform;
     private SpriteRenderer _arrowSpriteRenderer, _ballSpriteRenderer;
@@ -17,7 +24,7 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     public Vector2 AimPoint;
     public bool Moving, Shooting;
     private bool _startedMoving, _startedShooting;
-    
+
     public void Awake() {
         _ballTransform = transform.GetChild(0);
         _arrowTransform = _ballTransform.GetChild(0);
@@ -30,8 +37,27 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     private void Update() {
         AimPoint = _camera.ScreenToWorldPoint(Input.mousePosition);
     }
+    public override void Spawned() {
+        Player = new Player("P" + (Players.Count + 1), Players.Count + 1);
+        Player.IsTurn = true;
+        
+        Score = Player.Score;
+        IsTurn = Player.IsTurn;
+        SetShot = Player.SetShot;
+        
+        ChangeColor(Player.Color);
+        Players.Add(Player);
+
+        GameUiManager.Instance.UpdateScore(Players);
+    }
+    
+    public override void Despawned(NetworkRunner runner, bool hasState) {
+        Players.Remove(Player);
+        GameUiManager.Instance.UpdateScore(Players);
+    }
 
     public override void FixedUpdateNetwork() {
+        if (!IsTurn) return;
         if (!GetInput(out NetworkInputData data)) return;
         
         if (data.Moving && !_startedMoving) {
@@ -167,5 +193,19 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
 
     public void ResetGravity() {
         _rigidbody.gravityScale = 1f;
+    }
+    
+    public static void OnScoreChanged(Changed<MPBasketball> changed) {
+        changed.Behaviour.Player.Score = changed.Behaviour.Score;
+        GameUiManager.Instance.UpdateScore(Players);
+    }
+    
+    public static void OnTurnChanged(Changed<MPBasketball> changed) {
+        changed.Behaviour.Player.IsTurn = changed.Behaviour.IsTurn;
+        GameUiManager.Instance.UpdateScore(Players);
+    }
+    
+    public static void OnSetShotChanged(Changed<MPBasketball> changed) {
+        changed.Behaviour.Player.SetShot = changed.Behaviour.SetShot;
     }
 }
