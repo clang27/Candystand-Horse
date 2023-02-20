@@ -18,14 +18,15 @@ public enum GameType {
 public class MenuManager : MonoBehaviour {
     public static MenuManager Instance;
     public static bool InMenu;
-    
+
     [SerializeField] private GameObject _menu;
     [SerializeField] private TextMeshProUGUI _levelTextMesh, _playerCountTextMesh, _shotClockTextMesh;
     private CanvasGroup _submenuOne, _submenuTwo, _multimenu, _joinmenu;
-    
+
     private int _levelNumber = 0;
     private int _playerCount = 2;
     public int ShotClock { get; private set; } = 15;
+    public string RoomCode { get; private set; }
 
     private bool _boomboxEnabled;
     public bool BoomboxEnabled => _boomboxEnabled && GameManager.Instance.Mode != GameType.Ai;
@@ -96,6 +97,9 @@ public class MenuManager : MonoBehaviour {
 
         _playerCountTextMesh.text = nextPlayerCount.ToString();
         _playerCount = nextPlayerCount;
+    }
+    public void SetRoomCode(string s) {
+        RoomCode = s;
     }
     
     public void IncreaseShotClock(int amount) {
@@ -172,7 +176,7 @@ public class MenuManager : MonoBehaviour {
                 GameManager.Instance.GoToLocal(_playerCount);
                 break;
             case GameType.OnlineLobby:
-                GameManager.Instance.GoToOnline(BufferedHost);
+                GameManager.Instance.GoToOnlineLobby(BufferedHost);
                 break;
             case GameType.Ai:
                 GameManager.Instance.GoToAi();

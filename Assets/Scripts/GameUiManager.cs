@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameUiManager : MonoBehaviour {
     [SerializeField] private LeanTweenType _tweenType;
@@ -18,13 +19,22 @@ public class GameUiManager : MonoBehaviour {
     private CanvasGroup[] _turnCanvases;
     private Vector2 _startSize;
     private Coroutine _hideNiceShotRoutine;
+    
+    private GameObject _lobbyInfoBar, _practiceModeInfoBar;
+    private TextMeshProUGUI _lobbyCode;
+    private Button _lobbyStart;
 
     private void Awake() {
         Instance = this;
         _niceShotCanvas = transform.GetChild(0).GetComponent<CanvasGroup>();
         _niceShotRectTransform = transform.GetChild(0).GetComponent<RectTransform>();
         _turnCanvases = transform.GetChild(3).GetChild(1).GetComponentsInChildren<CanvasGroup>();
+        _practiceModeInfoBar = transform.GetChild(3).GetChild(2).gameObject;
         _message = _niceShotRectTransform.GetComponentInChildren<TextMeshProUGUI>();
+        
+        _lobbyInfoBar = transform.GetChild(5).gameObject;
+        _lobbyCode = _lobbyInfoBar.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
+        _lobbyStart = _lobbyInfoBar.transform.GetChild(1).GetComponent<Button>();
     }
 
     private void Start() {
@@ -45,6 +55,15 @@ public class GameUiManager : MonoBehaviour {
         _niceShotCanvas.alpha = 1f;
         LeanTween.size(_niceShotRectTransform, _startSize, _tweenTime).setEase(_tweenType);
         _hideNiceShotRoutine = StartCoroutine(HideShotBanner(time));
+    }
+    public void ShowLobbyInfo(string code, bool showButton) {
+        _lobbyInfoBar.SetActive(true);
+        _lobbyStart.gameObject.SetActive(showButton);
+        _lobbyCode.text = "Room Code:  " + code;
+    }
+    
+    public void HideLobbyInfo() {
+        _lobbyInfoBar.SetActive(false);
     }
 
     public void ShowLoading(bool b) {
@@ -93,11 +112,63 @@ public class GameUiManager : MonoBehaviour {
 
             var nameMesh = _turnCanvases[i].transform.GetChild(0).GetComponent<TextMeshProUGUI>();
             nameMesh.text = players[i].Name;
-            nameMesh.color = players[i].Color;
+            
+            var c = i switch {
+                0 => Color.red,
+                1 => Color.green,
+                2 => Color.yellow,
+                3 => Color.cyan,
+                _ => Color.HSVToRGB(0.07f, 1f, 1f)
+            };
+            nameMesh.color = c;
                 
             var animalMesh = _turnCanvases[i].transform.GetChild(1).GetComponent<TextMeshProUGUI>();
             animalMesh.text = animalText;
         }
+    }
+    
+    public void UpdateMPScore(List<MPPlayer> players) {
+        // For clearing canvases if player count is less than 4
+        ClearPlayers();
+
+        var word = players.Count switch {
+            2 => _twoPlayerWord,
+            3 => _threePlayerWord,
+            4 => _fourPlayerWord,
+            _ => _twoPlayerWord
+        };
+        
+        var blanks = players.Count switch {
+            2 => "-----",
+            3 => "----",
+            4 => "---",
+            _ => "-----"
+        };
+
+        for (var i = 0; i < players.Count; i++) {
+            _turnCanvases[i].alpha = (players[i].IsTurn) ? 1f : 0.2f;
+
+            var animalText = word.Substring(0, players[i].Score);
+            animalText += blanks.Substring(0, word.Length - players[i].Score);
+
+            var nameMesh = _turnCanvases[i].transform.GetChild(0).GetComponent<TextMeshProUGUI>();
+            nameMesh.text = players[i].Name;
+            
+            var c = i switch {
+                0 => Color.red,
+                1 => Color.green,
+                2 => Color.yellow,
+                3 => Color.cyan,
+                _ => Color.HSVToRGB(0.07f, 1f, 1f)
+            };
+            nameMesh.color = c;
+                
+            var animalMesh = _turnCanvases[i].transform.GetChild(1).GetComponent<TextMeshProUGUI>();
+            animalMesh.text = animalText;
+        }
+    }
+    public void ShowPracticeInfo(bool b) {
+        _practiceModeInfoBar.SetActive(b);
     }
 
     private void ClearPlayers() {

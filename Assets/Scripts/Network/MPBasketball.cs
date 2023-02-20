@@ -1,29 +1,31 @@
 using System.Collections.Generic;
+using System.Linq;
 using Fusion;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnterHandler, IPointerExitHandler, IPointerUpHandler {
-    public static List<Player> Players { get; } = new();
-    public Player Player { get; set; }
+    public static List<MPPlayer> Players => FindObjectsOfType<MPPlayer>().OrderBy(p => p.PlayerIndex).ToList();
     
     [SerializeField] private float _moveAcceleration = 2f;
     [SerializeField] private float _flickForce = 20f;
     [SerializeField] private float _maxDistance = 2f;
-    [Networked(OnChanged = nameof(OnScoreChanged))] public int Score { get; set; }
-    [Networked(OnChanged = nameof(OnTurnChanged))] public bool IsTurn { get; set; }
-    [Networked(OnChanged = nameof(OnSetShotChanged))] public bool SetShot { get; set; }
+    [Networked] public MPPlayer Player { get; private set; }
+    [Networked(OnChanged = nameof(OnGameStarted))] public NetworkBool GameStarted { get; set; }
+    public bool IsMe => _mpSpawner.Ball == this;
 
     private Rigidbody2D _rigidbody;
+    private Collider2D _collider;
     private Transform _arrowTransform, _ballTransform;
     private SpriteRenderer _arrowSpriteRenderer, _ballSpriteRenderer;
-    private Vector2 _startClickPoint, _startBallPoint;
+    public Vector2 _startClickPoint, _startBallPoint;
     private Vector2 _ballAimDirection => _startBallPoint - _rigidbody.position;
     private Camera _camera;
     
     public Vector2 AimPoint;
     public bool Moving, Shooting;
     private bool _startedMoving, _startedShooting;
+    private MPSpawner _mpSpawner;
 
     public void Awake() {
         _ballTransform = transform.GetChild(0);
@@ -31,33 +33,20 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
         _arrowSpriteRenderer = _arrowTransform.GetComponent<SpriteRenderer>();
         _ballSpriteRenderer = _ballTransform.GetComponent<SpriteRenderer>();
         _rigidbody = GetComponent<Rigidbody2D>();
+        _collider = GetComponentInChildren<Collider2D>();
         _camera = FindObjectOfType<Camera>();
+        _mpSpawner = FindObjectOfType<MPSpawner>();
     }
     
     private void Update() {
         AimPoint = _camera.ScreenToWorldPoint(Input.mousePosition);
     }
     public override void Spawned() {
-        Player = new Player("P" + (Players.Count + 1), Players.Count + 1);
-        Player.IsTurn = true;
-        
-        Score = Player.Score;
-        IsTurn = Player.IsTurn;
-        SetShot = Player.SetShot;
-        
-        ChangeColor(Player.Color);
-        Players.Add(Player);
-
-        GameUiManager.Instance.UpdateScore(Players);
-    }
-    
-    public override void Despawned(NetworkRunner runner, bool hasState) {
-        Players.Remove(Player);
-        GameUiManager.Instance.UpdateScore(Players);
+        if (!_mpSpawner.Ball)
+            _mpSpawner.Ball = this;
     }
 
     public override void FixedUpdateNetwork() {
-        if (!IsTurn) return;
         if (!GetInput(out NetworkInputData data)) return;
         
         if (data.Moving && !_startedMoving) {
@@ -82,6 +71,8 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     }
 
     public void OnPointerDown(PointerEventData eventData) {
+        if (!IsMe || !Player.IsTurn) return;
+        
         if (eventData.button == PointerEventData.InputButton.Right) {
             Moving = true;
         } else if (eventData.button == PointerEventData.InputButton.Left) {
@@ -90,16 +81,24 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
+        Debug.Log(Player.PlayerIndex + ": " + IsMe + " + " + Player.IsTurn);
+            
+        if (!IsMe || !Player.IsTurn) return;
+        
         Color.RGBToHSV(_ballSpriteRenderer.color, out var h, out var s, out _);
         _ballSpriteRenderer.color = Color.HSVToRGB(h, s, 0.5f);
     }
 
     public void OnPointerExit(PointerEventData eventData) {
+        if (!IsMe || !Player.IsTurn) return;
+        
         Color.RGBToHSV(_ballSpriteRenderer.color, out var h, out var s, out _);
         _ballSpriteRenderer.color = Color.HSVToRGB(h, s, 1f);
     }
 
     public void OnPointerUp(PointerEventData eventData) {
+        if (!IsMe || !Player.IsTurn) return;
+        
         if (eventData.button == PointerEventData.InputButton.Right)
             Moving = false;
         else if (eventData.button == PointerEventData.InputButton.Left)
@@ -139,7 +138,12 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
         GameManager.Instance.EndedShot();
         _arrowSpriteRenderer.enabled = false;
         ResetGravity();
-        _rigidbody.AddForce(_ballAimDirection * (_flickForce * _rigidbody.mass), ForceMode2D.Impulse);
+        if (_ballAimDirection.magnitude < 1f && _collider.IsTouchingLayers(LayerMask.GetMask("Floor"))) {
+            Color.RGBToHSV(_ballSpriteRenderer.color, out var h, out var s, out _);
+            _ballSpriteRenderer.color = Color.HSVToRGB(h, s, 0.5f);
+            GameManager.Instance.ShotMissed(gameObject);
+        } else
+            _rigidbody.AddForce(_ballAimDirection * (_flickForce * _rigidbody.mass), ForceMode2D.Impulse);
     }
     
     public void Move(Vector2 position) {
@@ -155,8 +159,10 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
 
         if (Shooting) {
             if (Vector2.Distance(_startBallPoint, newBallLocation) > _maxDistance)
-                _rigidbody.position = _startBallPoint - (aimDirection.normalized * _maxDistance);
-            
+                _rigidbody.position = Vector2.MoveTowards(_rigidbody.position,
+                    _startBallPoint - (aimDirection.normalized * _maxDistance),
+                    _moveAcceleration * Time.fixedDeltaTime);
+
             _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 0.5f, 1f);
             _arrowTransform.rotation = Quaternion.Euler(0, 0, Mathf.Rad2Deg * Mathf.Atan2(_ballAimDirection.y, _ballAimDirection.x));
         }
@@ -169,16 +175,11 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
         ResetGravity();
     }
 
-    public void ResetShotPosition() {
-        _rigidbody.position = _startBallPoint;
-        ResetRigidbody();
-    }
-
     public void ChangeColor(Color c) {
         _ballSpriteRenderer.color = c;
     }
     
-    private void ResetRigidbody() {
+    public void ResetRigidbody() {
         _rigidbody.gravityScale = 0f;
         _rigidbody.velocity = Vector2.zero;
         _rigidbody.angularVelocity = 0f;
@@ -195,17 +196,24 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
         _rigidbody.gravityScale = 1f;
     }
     
-    public static void OnScoreChanged(Changed<MPBasketball> changed) {
-        changed.Behaviour.Player.Score = changed.Behaviour.Score;
-        GameUiManager.Instance.UpdateScore(Players);
+    public void SwapPositionToShot(MPBasketball otherBall) {
+        otherBall.ResetPosition(_startBallPoint);
+        otherBall.ResetRigidbody();
+
+        ResetPosition(Vector3.up * 1000f);
+        ResetRigidbody();
     }
     
-    public static void OnTurnChanged(Changed<MPBasketball> changed) {
-        changed.Behaviour.Player.IsTurn = changed.Behaviour.IsTurn;
-        GameUiManager.Instance.UpdateScore(Players);
+    public void SwapPositionToReset(MPBasketball otherBall) {
+        otherBall.ResetPosition(MenuManager.Instance.CurrentLevel.ballRespawnPoint);
+
+        ResetPosition(Vector3.up * 1000f);
+        ResetRigidbody();
     }
     
-    public static void OnSetShotChanged(Changed<MPBasketball> changed) {
-        changed.Behaviour.Player.SetShot = changed.Behaviour.SetShot;
+    public static void OnGameStarted(Changed<MPBasketball> changed) {
+        if (!changed.Behaviour.GameStarted) return;
+        
+        GameManager.Instance.GoToOnlineMatch();
     }
 }

@@ -43,6 +43,7 @@ public class GameManager : MonoBehaviour {
     public void GoToPractice() {
         Mode = GameType.Practice;
         ResetScene();
+        GameUiManager.Instance.ShowPracticeInfo(true);
         _localBasketball.ChangeColor(Color.HSVToRGB(0.07f, 1f, 1f));
     }
 
@@ -52,10 +53,9 @@ public class GameManager : MonoBehaviour {
         
         for (var i = 0; i < playerCount; i++)
             _players.Add(new Player("P" + (i + 1), playerCount));
-        
-        
+
         _players[0].IsTurn = true;
-        _localBasketball.ChangeColor(_players[0].Color);
+        _localBasketball.ChangeColor(Color.red);
         
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
@@ -65,23 +65,39 @@ public class GameManager : MonoBehaviour {
         Mode = GameType.Ai;
         ResetScene();
         
-        _players.Add(new Player("P1", 2));
-        _players.Add(new Player("AI", 2));
+        _players.Add(new Player("P1",  2));
+        _players.Add(new Player("AI",  2));
         
         _players[0].IsTurn = true;
         _players[1].IsAi = true;
-        _localBasketball.ChangeColor(_players[0].Color);
+        _localBasketball.ChangeColor(Color.red);
         
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
     }
-    public void GoToOnline(bool host) {
+    public void GoToOnlineLobby(bool host) {
+        if (!host && (MenuManager.Instance.RoomCode.Length < 5 || MenuManager.Instance.RoomCode.Contains("-"))) {
+            _audioSource.PlayOneShot(_whistle);
+            return;
+        }
+        
         Mode = GameType.OnlineLobby;
         ResetScene();
-        _localBasketball.gameObject.SetActive(false);
-        _localBoombox.gameObject.SetActive(false);
         
         _mpSpawner.StartGame(host);
+    }
+    
+    public void GoToOnlineMatch() {
+        Mode = GameType.OnlineMatch;
+        
+        GameUiManager.Instance.HideLobbyInfo();
+        
+        TurnPhase = TurnPhase.Resting;
+        
+        _shotMade = false;
+        _incorrectShot = false;
+
+        MenuManager.Instance.CurrentLevel.goal.ResetGoal();
     }
 
     private void ResetScene() {
@@ -90,30 +106,32 @@ public class GameManager : MonoBehaviour {
             _pauseRoutine = null;
         }
         
+        _mpSpawner.EndGame();
+
         _shotMade = false;
         _incorrectShot = false;
         TurnPhase = TurnPhase.Resting;
         
         _players.Clear();
         TrickShotsSelector.Instance.ClearTricks();
+        TrickShotsSelector.Instance.CloseMenu();
         GameUiManager.Instance.UpdateScore(_players);
+        GameUiManager.Instance.HideLobbyInfo();
+        GameUiManager.Instance.ShowPracticeInfo(false);
         MenuManager.Instance.CurrentLevel.goal.ResetGoal();
         MenuManager.Instance.CurrentLevel.timer.EndCountdown();
-        
+
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), MenuManager.Instance.BoomboxEnabled);
         
-        _localBasketball.gameObject.SetActive(true);
-        _localBoombox.gameObject.SetActive(true);
         _localBasketball.ResetPosition(MenuManager.Instance.CurrentLevel.ballRespawnPoint);
         _localBoombox.ResetPosition(MenuManager.Instance.CurrentLevel.boomboxRespawnPoint);
-        _mpSpawner.EndGame();
 
         _cameraTransform.position = new Vector3(
             MenuManager.Instance.CurrentLevel.location.x,
             MenuManager.Instance.CurrentLevel.location.y,
             _cameraTransform.position.z);
     }
-    
+
     public void NextPlayersTurn() {
         if (_incorrectShot) {
             _audioSource.PlayOneShot(_whistle);
@@ -133,12 +151,41 @@ public class GameManager : MonoBehaviour {
         TrickShotsSelector.Instance.ActivateButton(false);
         TrickShotsSelector.Instance.CloseMenu();
         TurnPhase = TurnPhase.Transitioning;
-        _localBasketball.CancelActions();
-        GameUiManager.Instance.UpdateScore(_players);
-        MenuManager.Instance.CurrentLevel.timer.EndCountdown();
+        
         MenuManager.Instance.CurrentLevel.goal.ResetGoal();
+        MenuManager.Instance.CurrentLevel.timer.EndCountdown();
+        GameUiManager.Instance.UpdateScore(_players);
+        _localBasketball.CancelActions();
 
         _pauseRoutine = StartCoroutine(PauseSwitchingTurns());
+    }
+    
+    public void NextMPPlayersTurn() {
+        if (_incorrectShot) {
+            _audioSource.PlayOneShot(_whistle);
+            GameUiManager.Instance.ShowBanner("Wrong Shot!", 2f);
+        } else if (_shotMade) {
+            GameUiManager.Instance.ShowBanner("It's Good", 2f);
+        } else
+            GameUiManager.Instance.ShowBanner("No Good!", 2f);
+        
+        var players = MPBasketball.Players;
+
+        if (_mpSpawner.IsServer) {
+            var successfulShot = _shotMade && FindObjectOfType<TrickShotsSelector>().AllAccomplished();
+            if (successfulShot && !MPPlayer.SomeHasAShotSet(players))
+                MPPlayer.CurrentPlayer(players).SetShot = true;
+            else if (!successfulShot && MPPlayer.SomeHasAShotSet(players))
+                MPPlayer.CurrentPlayer(players).Score++;
+            
+            MPPlayer.CurrentPlayer(players).Basketball.CancelActions();
+        }
+        
+        TrickShotsSelector.Instance.ActivateButton(false);
+        TrickShotsSelector.Instance.CloseMenu();
+        TurnPhase = TurnPhase.Transitioning;
+        MenuManager.Instance.CurrentLevel.goal.ResetGoal();
+        _pauseRoutine = StartCoroutine(PauseSwitchingMPTurns());
     }
 
     private IEnumerator PauseSwitchingTurns() {
@@ -151,7 +198,7 @@ public class GameManager : MonoBehaviour {
                 Player.ClearAllShots(_players);
                 TrickShotsSelector.Instance.ClearTricks();
                 _localBasketball.ResetGravity();
-                TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu);
+                TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu && !Player.NextPlayer(_players).IsAi);
                 TurnPhase = TurnPhase.Resting;
             } else {
                 _localBasketball.ResetShotPosition();
@@ -170,13 +217,58 @@ public class GameManager : MonoBehaviour {
         } else {
             GameUiManager.Instance.ShowBanner(Player.CurrentPlayer(_players).Name + "'s Turn", 2f);
             _aiController.enabled = Player.CurrentPlayer(_players).IsAi;
-            _localBasketball.ChangeColor(Player.CurrentPlayer(_players).Color);
+            var c = _players.IndexOf(Player.CurrentPlayer(_players)) switch {
+                0 => Color.red,
+                1 => Color.green,
+                2 => Color.yellow,
+                3 => Color.cyan,
+                _ => Color.HSVToRGB(0.07f, 1f, 1f)
+            };
+            _localBasketball.ChangeColor(c);
             GameUiManager.Instance.UpdateScore(_players);
             MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
         }
     }
+    private IEnumerator PauseSwitchingMPTurns() {
+        yield return new WaitForSeconds(2.5f);
+        _shotMade = false;
+        _incorrectShot = false;
+        var players = MPBasketball.Players;
+        
+        if (players.Count(p => p.Lost) != _players.Count - 1) {
+            if (!MPPlayer.SomeHasAShotSet(players) || MPPlayer.PlayerWhoSetAShot(players) == MPPlayer.NextPlayer(players)) {
+                if (_mpSpawner.IsServer) {
+                    MPPlayer.ClearAllShots(players);
+                    MPPlayer.CurrentPlayer(players).Basketball.SwapPositionToReset(MPPlayer.NextPlayer(players).Basketball);
+                }
+                TrickShotsSelector.Instance.ClearTricks();
+                TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu);
+                TurnPhase = TurnPhase.Resting;
+            } else {
+                if (_mpSpawner.IsServer)
+                    MPPlayer.CurrentPlayer(players).Basketball.SwapPositionToShot(MPPlayer.NextPlayer(players).Basketball);
+                
+                TrickShotsSelector.Instance.ActivateButton(false);
+                TurnPhase = TurnPhase.Responding;
+            }
+        } else {
+            TurnPhase = TurnPhase.Finished;
+        }
+        
+        if (_mpSpawner.IsServer)
+            MPPlayer.GoToNextPlayer(players);
 
-    public void ShotMade() {
+        var p = _mpSpawner.IsServer ? MPPlayer.CurrentPlayer(players) : MPPlayer.NextPlayer(players);
+        
+        if (_players.Count(p => p.Lost) == _players.Count - 1) {
+            GameUiManager.Instance.ShowBanner(p.Name + " Wins!!", 12f);
+            _audioSource.PlayOneShot(_applause);
+        } else {
+            GameUiManager.Instance.ShowBanner(p.Name + "'s Turn", 2f);
+        }
+    }
+
+    public void ShotMade() {        
         _shotMade = true;
         _incorrectShot = !TrickShotsSelector.Instance.AllAccomplished();
         
@@ -189,7 +281,10 @@ public class GameManager : MonoBehaviour {
             }
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
         } else {
-            NextPlayersTurn();
+            if (Mode is GameType.OnlineMatch)
+                NextMPPlayersTurn();
+            else
+                NextPlayersTurn();
         }
     }
     public void ShotMissed(GameObject go) {
@@ -203,8 +298,11 @@ public class GameManager : MonoBehaviour {
             TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu && Mode is GameType.Practice);
             TurnPhase = TurnPhase.Resting;
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
-        } else if (Mode is not GameType.OnlineLobby){
-            NextPlayersTurn();
+        } else {
+            if (Mode is GameType.OnlineMatch)
+                NextMPPlayersTurn();
+            else
+                NextPlayersTurn();
         }
     }
     

@@ -3,7 +3,6 @@ using UnityEngine;
 public class Floor : MonoBehaviour, IShot {
     [SerializeField] private float minimumSpeed = 25f;
     public int CurrentOccurrences { get; set; }
-    private bool _ballTouchingGround;
     private BasketballSounds _sounds;
 
     private void Awake() {
@@ -15,19 +14,10 @@ public class Floor : MonoBehaviour, IShot {
             _sounds.PlaySound(col.relativeVelocity.sqrMagnitude);
         if (GameManager.Instance.TurnPhase != TurnPhase.Shooting) return;
 
-        _ballTouchingGround = true;
         CurrentOccurrences++;
 
         if (col.relativeVelocity.y < 0f && col.relativeVelocity.y > -minimumSpeed) {
             GameManager.Instance.ShotMissed(col.gameObject);
         }
-    }
-
-    private void OnCollisionExit2D(Collision2D col) {
-        if (col.gameObject.layer == LayerMask.NameToLayer("Ball")) return;
-        if (GameManager.Instance.TurnPhase != TurnPhase.Shooting) return;
-        if (!_ballTouchingGround) return;
-        
-        _ballTouchingGround = false;
     }
 }

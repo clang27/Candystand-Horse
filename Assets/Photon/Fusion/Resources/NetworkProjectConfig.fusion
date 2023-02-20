@@ -6,7 +6,7 @@
     "ServerPhysicsMode": 1,
     "UseLagCompensation": true,
     "LagCompensation": {
-        "HitboxBufferSize": 20,
+        "HitboxBufferSize": 16,
         "HitboxCapacity": 512,
         "ExpansionFactor": 0.20000000298023225,
         "Optimize": false,
@@ -57,12 +57,12 @@
         "MultiplierMax": 3.0
     },
     "Network": {
-        "SocketSendBufferSize": 64,
-        "SocketRecvBufferSize": 64,
-        "ConnectAttempts": 10,
-        "ConnectInterval": 0.5,
+        "SocketSendBufferSize": 96,
+        "SocketRecvBufferSize": 96,
+        "ConnectAttempts": 5,
+        "ConnectInterval": 0.2,
         "ConnectionDefaultRtt": 0.1,
-        "ConnectionTimeout": 10.0,
+        "ConnectionTimeout": 3.0,
         "ConnectionPingInterval": 1.0,
         "ConnectionShutdownTime": 1.0,
         "MtuDefault": 1136,

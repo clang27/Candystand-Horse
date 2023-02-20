@@ -15,6 +15,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
     private Vector2 _ballAimDirection => _startBallPoint - (Vector2)_ballTransform.position;
     private Camera _camera;
     private Vector2 _mousePoint;
+    private Collider2D _collider;
     
     private void Awake() {
         _ballTransform = transform;
@@ -23,6 +24,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         _ballSpriteRenderer = GetComponent<SpriteRenderer>();
         _ai = GetComponent<AiController>();
         _rigidbody = GetComponent<Rigidbody2D>();
+        _collider = GetComponent<Collider2D>();
         _camera = FindObjectOfType<Camera>();
     }
     private void Update() {
@@ -112,7 +114,12 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
         GameManager.Instance.EndedShot();
         _arrowSpriteRenderer.enabled = false;
         ResetGravity();
-        _rigidbody.AddForce(_ballAimDirection * (_flickForce * _rigidbody.mass), ForceMode2D.Impulse);
+        if (_ballAimDirection.magnitude < 1f && _collider.IsTouchingLayers(LayerMask.GetMask("Floor"))) {
+            Color.RGBToHSV(_ballSpriteRenderer.color, out var h, out var s, out _);
+            _ballSpriteRenderer.color = Color.HSVToRGB(h, s, 0.5f);
+            GameManager.Instance.ShotMissed(gameObject);
+        } else
+            _rigidbody.AddForce(_ballAimDirection * (_flickForce * _rigidbody.mass), ForceMode2D.Impulse);
     }
     
     public void Move(Vector2 position) {
@@ -128,7 +135,9 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
 
         if (_shooting) {
             if (Vector2.Distance(_startBallPoint, newBallLocation) > _maxDistance)
-                _rigidbody.position = _startBallPoint - (aimDirection.normalized * _maxDistance);
+                _rigidbody.position = Vector2.MoveTowards(_rigidbody.position,
+                    _startBallPoint - (aimDirection.normalized * _maxDistance),
+                    _moveAcceleration * (_ai.enabled ? 0.6f : 1f) * Time.fixedDeltaTime);
 
             _arrowSpriteRenderer.size = new Vector2(_ballAimDirection.magnitude + 0.5f, 1f);
             //_arrowTransform.localScale = new Vector3((_ballAimDirection * 0.0795f).magnitude + 0.1f, _arrowTransform.localScale.y, _arrowTransform.localScale.z);
