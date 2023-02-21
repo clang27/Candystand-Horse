@@ -4,7 +4,6 @@ using System.Linq;
 using Fusion;
 using Fusion.Sockets;
 using UnityEngine;
-
 public struct NetworkInputData : INetworkInput {
     public bool Moving, Shooting;
     public Vector3 AimPoint;
@@ -22,6 +21,8 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
     private Boombox _localBoombox;
     private TimerUi _localTimer;
     public MPBasketball Ball { get; set; }
+    public List<MPBasketball> Balls => _spawnedPlayers
+        .Select(sp => sp.Value.GetComponent<MPBasketball>()).ToList();
 
     private void Awake() {
         _localBasketball = FindObjectOfType<BasketballFlick>();
@@ -69,7 +70,6 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
 
         var spawnPosition = MenuManager.Instance.CurrentLevel.ballRespawnPoint;
         var networkPlayerObject = runner.Spawn(_ballPrefab, spawnPosition, Quaternion.identity, player);
-        
         _spawnedPlayers.Add(player, networkPlayerObject);
 
         // Hide other basketballs away while waiting on host to start game

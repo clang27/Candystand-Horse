@@ -6,8 +6,6 @@ public interface IShot {
     public int CurrentOccurrences { get; set; }
 }
 
-// TODO: Fix ShotMade if goal started, but then ball hit wall or floor
-// TODO: Fix moving ball around gets stuck in wall
 public class BasketballGoal : MonoBehaviour {
     private List<IShot> _trickShots = new();
     private BasketballSounds _swishSounds;

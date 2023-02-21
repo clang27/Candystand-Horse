@@ -198,7 +198,7 @@ GameObject:
   - component: {fileID: 9181444371596159620}
   - component: {fileID: 2092656645909491241}
   - component: {fileID: 1519264543116467251}
-  - component: {fileID: 804934403}
+  - component: {fileID: 1124056100}
   m_Layer: 7
   m_Name: NetworkBall
   m_TagString: Untagged
@@ -331,15 +331,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3356b3807e575a45b2fe618138bcadd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _interpolationDataSource: 3
+  _interpolationDataSource: 2
   _moveAcceleration: 20
   _flickForce: 5.5
   _maxDistance: 6
   _Player: {fileID: 2092656645909491241}
   _GameStarted:
     _value: 0
-  _startClickPoint: {x: 0, y: 0}
-  _startBallPoint: {x: 0, y: 0}
+  _TurnPhase: 0
   AimPoint: {x: 0, y: 0}
   Moving: 0
   Shooting: 0
@@ -367,7 +366,7 @@ MonoBehaviour:
   NetworkedBehaviours:
   - {fileID: 9181444371596159618}
   - {fileID: 2092656645909491241}
-  - {fileID: 804934403}
+  - {fileID: 1124056100}
   SimulationBehaviours: []
 --- !u!50 &9181444371596159620
 Rigidbody2D:
@@ -427,7 +426,7 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 0.7
---- !u!114 &804934403
+--- !u!114 &1124056100
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -440,7 +439,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _interpolationDataSource: 2
-  InterpolationSpace: 1
+  InterpolationSpace: 0
   InterpolationTarget: {fileID: 9181444371395601935}
   InterpolateErrorCorrection: 1
   InterpolatedErrorCorrectionSettings:
@@ -448,11 +447,11 @@ MonoBehaviour:
     MaxRate: 10
     PosBlendStart: 0.25
     PosBlendEnd: 1
-    PosMinCorrection: 0.025
+    PosMinCorrection: 0.05
     PosTeleportDistance: 2
-    RotBlendStart: 0.1
-    RotBlendEnd: 0.5
-    RotTeleportRadians: 1.5
+    RotBlendStart: 100
+    RotBlendEnd: 200
+    RotTeleportRadians: 300
   UseLegacySharedModeInterpolation: 0
   TargetInterpolationDelay: 0.03
 --- !u!1 &9181444371999347618

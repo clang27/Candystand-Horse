@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class Wall : MonoBehaviour, IShot {
@@ -10,10 +9,18 @@ public class Wall : MonoBehaviour, IShot {
     }
 
     private void OnCollisionEnter2D(Collision2D col) {
-        if (col.gameObject.layer != LayerMask.NameToLayer("Ball")) return;
-        if (GameManager.Instance.TurnPhase is not TurnPhase.Moving and not TurnPhase.Charging)
-            _sounds.PlaySound(col.relativeVelocity.sqrMagnitude);
-        if (GameManager.Instance.TurnPhase != TurnPhase.Shooting) return;
+        if (!col.gameObject.name.Contains("Ball")) return;
+        if (GameManager.Instance.Mode is GameType.OnlineLobby or GameType.OnlineMatch) {
+            var ball = col.gameObject.GetComponent<MPBasketball>();
+            if (ball.TurnPhase is not TurnPhase.Moving and not TurnPhase.Charging)
+                _sounds.PlaySound(col.relativeVelocity.sqrMagnitude);
+            if (ball.TurnPhase != TurnPhase.Shooting) return;
+        }
+        else {
+            if (GameManager.Instance.TurnPhase is not TurnPhase.Moving and not TurnPhase.Charging)
+                _sounds.PlaySound(col.relativeVelocity.sqrMagnitude);
+            if (GameManager.Instance.TurnPhase != TurnPhase.Shooting) return;
+        }
         
         CurrentOccurrences++;
     }

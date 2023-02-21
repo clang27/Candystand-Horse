@@ -93,6 +93,9 @@ public class GameManager : MonoBehaviour {
         GameUiManager.Instance.HideLobbyInfo();
         
         TurnPhase = TurnPhase.Resting;
+        if (_mpSpawner.IsServer)
+            foreach (var b in _mpSpawner.Balls)
+                b.TurnPhase = TurnPhase.Resting;
         
         _shotMade = false;
         _incorrectShot = false;
@@ -179,11 +182,13 @@ public class GameManager : MonoBehaviour {
                 MPPlayer.CurrentPlayer(players).Score++;
             
             MPPlayer.CurrentPlayer(players).Basketball.CancelActions();
+            foreach (var b in _mpSpawner.Balls)
+                b.TurnPhase = TurnPhase.Transitioning;
         }
         
         TrickShotsSelector.Instance.ActivateButton(false);
         TrickShotsSelector.Instance.CloseMenu();
-        TurnPhase = TurnPhase.Transitioning;
+        
         MenuManager.Instance.CurrentLevel.goal.ResetGoal();
         _pauseRoutine = StartCoroutine(PauseSwitchingMPTurns());
     }
@@ -240,19 +245,25 @@ public class GameManager : MonoBehaviour {
                 if (_mpSpawner.IsServer) {
                     MPPlayer.ClearAllShots(players);
                     MPPlayer.CurrentPlayer(players).Basketball.SwapPositionToReset(MPPlayer.NextPlayer(players).Basketball);
+                    foreach (var b in _mpSpawner.Balls)
+                        b.TurnPhase = TurnPhase.Resting;
                 }
                 TrickShotsSelector.Instance.ClearTricks();
                 TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu);
-                TurnPhase = TurnPhase.Resting;
             } else {
-                if (_mpSpawner.IsServer)
-                    MPPlayer.CurrentPlayer(players).Basketball.SwapPositionToShot(MPPlayer.NextPlayer(players).Basketball);
-                
+                if (_mpSpawner.IsServer) {
+                    MPPlayer.CurrentPlayer(players).Basketball
+                        .SwapPositionToShot(MPPlayer.NextPlayer(players).Basketball);
+                    foreach (var b in _mpSpawner.Balls)
+                        b.TurnPhase = TurnPhase.Responding;
+                }
+
                 TrickShotsSelector.Instance.ActivateButton(false);
-                TurnPhase = TurnPhase.Responding;
             }
         } else {
-            TurnPhase = TurnPhase.Finished;
+            if (_mpSpawner.IsServer)
+                foreach (var b in _mpSpawner.Balls)
+                    b.TurnPhase = TurnPhase.Finished;
         }
         
         if (_mpSpawner.IsServer)
@@ -297,6 +308,10 @@ public class GameManager : MonoBehaviour {
                 mb.ResetGravity();
             TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu && Mode is GameType.Practice);
             TurnPhase = TurnPhase.Resting;
+            if (_mpSpawner.IsServer)
+                foreach (var b in _mpSpawner.Balls)
+                    b.TurnPhase = TurnPhase.Resting;
+            
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
         } else {
             if (Mode is GameType.OnlineMatch)
@@ -319,8 +334,11 @@ public class GameManager : MonoBehaviour {
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Wall"), false);
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Net"), false);
         TurnPhase = TurnPhase.Charging;
+        if (_mpSpawner.IsServer)
+            foreach (var b in _mpSpawner.Balls)
+                b.TurnPhase = TurnPhase.Charging;
         
-        if (Mode == GameType.Practice)
+        if (Mode is GameType.Practice or GameType.OnlineLobby)
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
         else
             TrickShotsSelector.Instance.ActivateButton(false);
@@ -333,6 +351,9 @@ public class GameManager : MonoBehaviour {
         if (TrickShotsSelector.Instance.HasShot("Blindfolded"))
             _blindfold.PutOn(false);
         
+        if (_mpSpawner.IsServer)
+            foreach (var b in _mpSpawner.Balls)
+                b.TurnPhase = TurnPhase.Shooting;
         TurnPhase = TurnPhase.Shooting;
     }
 
@@ -341,8 +362,11 @@ public class GameManager : MonoBehaviour {
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Wall"), _aiController.enabled);
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Net"), _aiController.enabled);
         
+        if (_mpSpawner.IsServer)
+            foreach (var b in _mpSpawner.Balls)
+                b.TurnPhase = TurnPhase.Moving;
         TurnPhase = TurnPhase.Moving;
-        if (Mode == GameType.Practice)
+        if (Mode is GameType.Practice or GameType.OnlineLobby)
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
     }
 }

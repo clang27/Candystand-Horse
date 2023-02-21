@@ -29,6 +29,7 @@ public class MPPlayer : NetworkBehaviour {
         PlayerIndex = PlayerCount - 1;
         IsTurn = PlayerIndex == 0;
         Name = "P" + PlayerCount;
+        gameObject.name = "Ball_" + Name;
         
         var c = PlayerIndex switch {
             0 => Color.red,
@@ -85,6 +86,9 @@ public class MPPlayer : NetworkBehaviour {
     }
     
     public static void OnIndexChanged(Changed<MPPlayer> changed) {
+        changed.Behaviour.Name = "P" + changed.Behaviour.PlayerCount;
+        changed.Behaviour.gameObject.name = "Ball_" + changed.Behaviour.Name;
+        
         GameUiManager.Instance.UpdateMPScore(MPBasketball.Players);
         
         var c = changed.Behaviour.PlayerIndex switch {
