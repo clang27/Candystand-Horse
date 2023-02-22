@@ -1,7 +1,7 @@
 # H.O.R.S.E.
-| Old                                                     | New                                                         |
-| ------------------------------------------------------- | ----------------------------------------------------------- |
-| ![Candystand.com H.O.R.S.E.!](/Markdown/images/csh.jpg) | ![Knitwitstudios.com H.O.R.S.E.!](/Markdown/images/kwh.jpg) |
+| Old                                                                                    | New                                                                                    |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| <img width="400" height="300" alt="Candystand HORSE" src="/Markdown/images/csh.jpg" /> | <img width="400" height="300" alt="Knitwit Studios HORSE" src="/Markdown/images/kwh.jpg" /> |
 
 ## Purpose of this Repo
 To recreate classic, childhood games from **Flash** to **WebGL**. This month's game is an arcade, basketball shooter I played growing up with my friend Nate. You can see the game [here](https://knitwitstudios.itch.io/ultimate-horse).
