@@ -7,11 +7,11 @@ public class MPPlayer : NetworkBehaviour {
     public MPBasketball Basketball { get; private set; }
     [Networked] public string Name { get; set; }
     [Networked(OnChanged = nameof(OnScoreChanged))] public int Score { get; set; }
-    [Networked(OnChanged = nameof(OnTurnChanged))] public NetworkBool IsTurn { get; set; }
+    [Networked(OnChanged = nameof(OnTurnChanged))] public NetworkBool IsTurn { get; private set; }
     [Networked] public NetworkBool SetShot { get; set; }
-    [Networked(OnChanged = nameof(OnIndexChanged))] public int PlayerIndex { get; set; }
-    [Networked(OnChanged = nameof(OnCountChanged))] public int PlayerCount { get; set; }
-    
+    [Networked(OnChanged = nameof(OnIndexChanged))] public int PlayerIndex { get; private set; }
+    [Networked(OnChanged = nameof(OnCountChanged))] private int PlayerCount { get; set; }
+
     public bool Lost => Score == MaxScore;
     private int MaxScore => PlayerCount switch {
         2 => 5,
@@ -83,6 +83,10 @@ public class MPPlayer : NetworkBehaviour {
     
     public static void OnTurnChanged(Changed<MPPlayer> changed) {
         GameUiManager.Instance.UpdateMPScore(MPBasketball.Players);
+
+        var bb = changed.Behaviour.Basketball;
+        if (bb.IsMe && bb.Player.IsTurn && bb.TurnPhase is not TurnPhase.Responding)
+            TrickShotsSelector.Instance.ActivateButton(true);
     }
     
     public static void OnIndexChanged(Changed<MPPlayer> changed) {

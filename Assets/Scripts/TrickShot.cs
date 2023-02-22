@@ -1,8 +1,17 @@
 using System.Collections.Generic;
 using System.Linq;
+using Fusion;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
+// TODO: Remove this if going with input sent
+public struct MPTrickShot : INetworkStruct {
+    public NetworkString<_32> Name;
+    public int TargetOccurrences;
+    public int Occurrences;
+    public NetworkBool ExactTarget;
+}
 
 public class TrickShot: MonoBehaviour {
     public string Name { get; private set; }
@@ -14,11 +23,9 @@ public class TrickShot: MonoBehaviour {
     public List<IShot> Shots => ShotObjects.Select(obj => obj.GetComponent<IShot>()).ToList();
     
     private Button _button;
-    private TrickShotsSelector _trickShotsSelector;
     private Image _checkmark;
     private void Awake() {
         _button = GetComponent<Button>();
-        _trickShotsSelector = FindObjectOfType<TrickShotsSelector>();
         _checkmark = GetComponentInChildren<Image>();
     }
 
@@ -29,14 +36,14 @@ public class TrickShot: MonoBehaviour {
     public void SelectShot() {
         if (!Selected) {
             ShowCheckmark(true);
-            _trickShotsSelector.AddShot(this);
+            TrickShotsSelector.Instance.AddShot(this);
             foreach (var shot in conflictingShots) {
                 shot.ShowCheckmark(false);
-                _trickShotsSelector.RemoveShotIfExists(shot);
+                TrickShotsSelector.Instance.RemoveShotIfExists(shot);
             }
         } else {
             ShowCheckmark(false);
-            _trickShotsSelector.RemoveShotIfExists(this);
+            TrickShotsSelector.Instance.RemoveShotIfExists(this);
         }
     }
     public void ClearCheckmark() {

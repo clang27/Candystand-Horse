@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Fusion;
 using UnityEngine;
 
 public enum TurnPhase {
@@ -83,7 +84,20 @@ public class GameManager : MonoBehaviour {
         
         Mode = GameType.OnlineLobby;
         ResetScene();
+        TrickShotsSelector.Instance.ActivateButton(false);
+        StartCoroutine(WaitForServerShutdown(host));
+    }
+    
+    private IEnumerator WaitForServerShutdown(bool host) {
+        if (_mpSpawner.IsShuttingDown) {
+            GameUiManager.Instance.ShowLoading(true);
+        }
+        while (_mpSpawner.IsShuttingDown) {
+            yield return null;
+        }
         
+        GameUiManager.Instance.ShowLoading(false);
+        Mode = GameType.OnlineLobby;
         _mpSpawner.StartGame(host);
     }
     
@@ -93,10 +107,14 @@ public class GameManager : MonoBehaviour {
         GameUiManager.Instance.HideLobbyInfo();
         
         TurnPhase = TurnPhase.Resting;
-        if (_mpSpawner.IsServer)
+        if (_mpSpawner.IsServer) {
             foreach (var b in _mpSpawner.Balls)
                 b.TurnPhase = TurnPhase.Resting;
-        
+
+            TrickShotsSelector.Instance.ActivateButton(true);
+            MPSpawner.Timer.Timer = TickTimer.CreateFromSeconds(_mpSpawner.Runner, MPSpawner.Timer.Seconds);
+        }
+
         _shotMade = false;
         _incorrectShot = false;
 
@@ -144,7 +162,7 @@ public class GameManager : MonoBehaviour {
         } else
             GameUiManager.Instance.ShowBanner("No Good!", 2f);
         
-        var successfulShot = _shotMade && FindObjectOfType<TrickShotsSelector>().AllAccomplished();
+        var successfulShot = _shotMade && !_incorrectShot;
 
         if (successfulShot && !Player.SomeHasAShotSet(_players))
             Player.CurrentPlayer(_players).SetShot = true;
@@ -175,7 +193,7 @@ public class GameManager : MonoBehaviour {
         var players = MPBasketball.Players;
 
         if (_mpSpawner.IsServer) {
-            var successfulShot = _shotMade && FindObjectOfType<TrickShotsSelector>().AllAccomplished();
+            var successfulShot = _shotMade && !_incorrectShot;
             if (successfulShot && !MPPlayer.SomeHasAShotSet(players))
                 MPPlayer.CurrentPlayer(players).SetShot = true;
             else if (!successfulShot && MPPlayer.SomeHasAShotSet(players))
@@ -184,6 +202,8 @@ public class GameManager : MonoBehaviour {
             MPPlayer.CurrentPlayer(players).Basketball.CancelActions();
             foreach (var b in _mpSpawner.Balls)
                 b.TurnPhase = TurnPhase.Transitioning;
+
+            MPSpawner.Timer.Timer = TickTimer.None;
         }
         
         TrickShotsSelector.Instance.ActivateButton(false);
@@ -219,6 +239,7 @@ public class GameManager : MonoBehaviour {
         if (_players.Count(p => p.Lost) == _players.Count - 1) {
             GameUiManager.Instance.ShowBanner(Player.CurrentPlayer(_players).Name + " Wins!!", 12f);
             _audioSource.PlayOneShot(_applause);
+            TrickShotsSelector.Instance.ActivateButton(false);
         } else {
             GameUiManager.Instance.ShowBanner(Player.CurrentPlayer(_players).Name + "'s Turn", 2f);
             _aiController.enabled = Player.CurrentPlayer(_players).IsAi;
@@ -247,18 +268,24 @@ public class GameManager : MonoBehaviour {
                     MPPlayer.CurrentPlayer(players).Basketball.SwapPositionToReset(MPPlayer.NextPlayer(players).Basketball);
                     foreach (var b in _mpSpawner.Balls)
                         b.TurnPhase = TurnPhase.Resting;
+                    
+                    TrickShotsSelector.Instance.ActivateButton(
+                        MPPlayer.NextPlayer(players).Basketball.IsMe && 
+                        !MenuManager.InMenu && 
+                        MPPlayer.NextPlayer(players).Basketball.TurnPhase is not TurnPhase.Responding
+                    );
                 }
+                
                 TrickShotsSelector.Instance.ClearTricks();
-                TrickShotsSelector.Instance.ActivateButton(!MenuManager.InMenu);
             } else {
                 if (_mpSpawner.IsServer) {
                     MPPlayer.CurrentPlayer(players).Basketball
                         .SwapPositionToShot(MPPlayer.NextPlayer(players).Basketball);
                     foreach (var b in _mpSpawner.Balls)
                         b.TurnPhase = TurnPhase.Responding;
+                    
+                    TrickShotsSelector.Instance.ActivateButton(false);
                 }
-
-                TrickShotsSelector.Instance.ActivateButton(false);
             }
         } else {
             if (_mpSpawner.IsServer)
@@ -274,8 +301,10 @@ public class GameManager : MonoBehaviour {
         if (_players.Count(p => p.Lost) == _players.Count - 1) {
             GameUiManager.Instance.ShowBanner(p.Name + " Wins!!", 12f);
             _audioSource.PlayOneShot(_applause);
+            TrickShotsSelector.Instance.ActivateButton(false);
         } else {
             GameUiManager.Instance.ShowBanner(p.Name + "'s Turn", 2f);
+            MPSpawner.Timer.Timer = TickTimer.CreateFromSeconds(_mpSpawner.Runner, MPSpawner.Timer.Seconds);
         }
     }
 
@@ -285,7 +314,7 @@ public class GameManager : MonoBehaviour {
         
         if (Mode is GameType.Practice or GameType.OnlineLobby) {
             if (_incorrectShot) {
-                _audioSource.Play();
+                _audioSource.PlayOneShot(_whistle);
                 GameUiManager.Instance.ShowBanner("Wrong Shot!", 3f);
             } else if (_shotMade) {
                 GameUiManager.Instance.ShowBanner("It's Good!", 3f);
@@ -330,7 +359,8 @@ public class GameManager : MonoBehaviour {
         ShotMissed(go);
     }
     public void StartedShot() {
-        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), !MenuManager.Instance.BoomboxEnabled);
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), 
+            (Mode is GameType.OnlineLobby or GameType.OnlineMatch && MPSpawner.Boombox) ? !MPSpawner.Boombox.Active : !MenuManager.Instance.BoomboxEnabled);
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Wall"), false);
         Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Net"), false);
         TurnPhase = TurnPhase.Charging;

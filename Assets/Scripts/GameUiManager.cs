@@ -23,6 +23,8 @@ public class GameUiManager : MonoBehaviour {
     private GameObject _lobbyInfoBar, _practiceModeInfoBar;
     private TextMeshProUGUI _lobbyCode;
     private Button _lobbyStart;
+    
+    private bool _loading { get; set; }
 
     private void Awake() {
         Instance = this;
@@ -43,6 +45,8 @@ public class GameUiManager : MonoBehaviour {
     }
 
     public void ShowBanner(string message, float time) {
+        if (_loading) return;
+        
         // Already showing, so hide and restart banner timer
         if (_niceShotCanvas.alpha > 0.9f) {
             _niceShotRectTransform.sizeDelta = Vector2.zero;
@@ -67,6 +71,7 @@ public class GameUiManager : MonoBehaviour {
     }
 
     public void ShowLoading(bool b) {
+        _loading = b;
         if (!b) {
             _niceShotRectTransform.sizeDelta = Vector2.zero;
             _niceShotCanvas.alpha = 0f;

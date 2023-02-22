@@ -13,7 +13,7 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     [Networked] public MPPlayer Player { get; private set; }
     [Networked(OnChanged = nameof(OnGameStarted))] public NetworkBool GameStarted { get; set; }
     [Networked(OnChanged = nameof(OnPhaseChanged))] public TurnPhase TurnPhase { get; set; }
-    public bool IsMe => _mpSpawner.Ball == this;
+    public bool IsMe => MPSpawner.Ball == this;
 
     private Rigidbody2D _rigidbody;
     private Collider2D _collider;
@@ -26,8 +26,11 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     public Vector2 AimPoint;
     public bool Moving, Shooting;
     private bool _startedMoving, _startedShooting;
-    private MPSpawner _mpSpawner;
     
+    // TODO: Remove if doing input
+    public readonly MPTrickShot[] ClientTricks = new MPTrickShot[6];
+    public static readonly MPTrickShot[] ServerTricks = new MPTrickShot[6];
+
     public void Awake() {
         _ballTransform = transform.GetChild(0);
         _arrowTransform = _ballTransform.GetChild(0);
@@ -36,39 +39,53 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
         _rigidbody = GetComponent<Rigidbody2D>();
         _collider = GetComponentInChildren<Collider2D>();
         _camera = FindObjectOfType<Camera>();
-        _mpSpawner = FindObjectOfType<MPSpawner>();
     }
     private void Update() {
         AimPoint = _camera.ScreenToWorldPoint(Input.mousePosition);
-        
-        if (!IsMe && !_mpSpawner.IsServer && TurnPhase is TurnPhase.Charging)
+    }
+
+    public override void Render() {
+        if ((!IsMe && TurnPhase is TurnPhase.Charging) || (IsMe && Shooting))
             UpdateArrow();
     }
+
     public override void Spawned() {
-        if (!_mpSpawner.Ball)
-            _mpSpawner.Ball = this;
+        if (!MPSpawner.Ball)
+            MPSpawner.Ball = this;
     }
+    
     public override void FixedUpdateNetwork() {
         if (!GetInput(out NetworkInputData data)) return;
-        
-        if (data.Moving && !_startedMoving) {
+
+        if (Player.IsTurn) {
+            ServerTricks[0] = data.TrickOne;
+            ServerTricks[1] = data.TrickTwo;
+            ServerTricks[2] = data.TrickThree;
+            ServerTricks[3] = data.TrickFour;
+            ServerTricks[4] = data.TrickFive;
+            ServerTricks[5] = data.TrickSix;
+
+            TrickShotsSelector.Instance.UpdateMPListText(ServerTricks);
+        }
+
+        if (data.BallMoving && !_startedMoving) {
             _startedMoving = true;
-            StartMoving(data.AimPoint);
-        } else if (!data.Moving && _startedMoving) {
+            StartMoving(data.BallAimPoint);
+        } else if (!data.BallMoving && _startedMoving) {
             _startedMoving = false;
             EndMoving();
         }
             
-        if (data.Shooting && !_startedShooting) {
+        if (data.BallShooting && !_startedShooting) {
             _startedShooting = true;
-            StartShooting(data.AimPoint);
-        } else if (!data.Shooting && _startedShooting) {
+            StartShooting(data.BallAimPoint);
+        } else if (!data.BallShooting && _startedShooting) {
             _startedShooting = false;
             EndShooting();
         }
 
-        if (data.Moving || data.Shooting) {
-            Move(data.AimPoint);
+        if (data.BallMoving || data.BallShooting) {
+            Move(data.BallAimPoint);
         }
     }
     public void OnPointerEnter(PointerEventData eventData) {
@@ -107,7 +124,7 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
             Shooting = false;
     }
 
-    public void StartMoving(Vector2 position) {
+    private void StartMoving(Vector2 position) {
         _startedMoving = true;
         Moving = true;
         GameManager.Instance.StartedMove();
@@ -120,13 +137,13 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
             TrickShotsSelector.Instance.CloseMenu();
     }
 
-    public void EndMoving() {
+    private void EndMoving() {
         _startedMoving = false;
         Moving = false;
         ResetRigidbody();
     }
     
-    public void StartShooting(Vector2 position) {
+    private void StartShooting(Vector2 position) {
         _startedShooting = true;
         Shooting = true;
         GameManager.Instance.StartedShot();
@@ -146,7 +163,7 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
             TrickShotsSelector.Instance.CloseMenu();
     }
 
-    public void EndShooting() {
+    private void EndShooting() {
         _startedShooting = false;
         Shooting = false;
         GameManager.Instance.EndedShot();
@@ -160,7 +177,8 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
         } else
             _rigidbody.AddForce(_ballAimDirection * (_flickForce * _rigidbody.mass), ForceMode2D.Impulse);
     }
-    public void Move(Vector2 position) {
+    
+    private void Move(Vector2 position) {
         var xDistance = _startClickPoint.x - position.x;
         var yDistance = _startClickPoint.y - position.y;
         var newBallLocation = _startBallPoint - new Vector2(xDistance, yDistance);
@@ -169,16 +187,13 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
         if (Shooting && Vector2.Distance(_startBallPoint, newBallLocation) > _maxDistance) {
             _rigidbody.position = Vector2.MoveTowards(_rigidbody.position,
                 _startBallPoint - (aimDirection.normalized * _maxDistance),
-                _moveAcceleration * Time.fixedDeltaTime);
+                _moveAcceleration * Runner.DeltaTime);
         } else {
             _rigidbody.position = Vector2.MoveTowards(
                 _rigidbody.position, 
                 newBallLocation,
-                _moveAcceleration * Time.fixedDeltaTime);
+                _moveAcceleration * Runner.DeltaTime);
         }
-
-        if (Shooting)
-            UpdateArrow();
     }
 
     private void UpdateArrow() {

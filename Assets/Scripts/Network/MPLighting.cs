@@ -10,7 +10,7 @@ public class MPLighting : MonoBehaviour {
         _startScale = _shadowTransform.localScale;
     }
     
-    private void Update() {
+    private void LateUpdate() {
         var hit = Physics2D.Raycast(_shadowTransform.parent.position, Vector2.down, 
             Mathf.Infinity, LayerMask.GetMask("Floor"));
 

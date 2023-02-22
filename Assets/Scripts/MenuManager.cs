@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine;
 
 public struct BasketballLevel {
-    public Vector3 location, ballRespawnPoint, boomboxRespawnPoint, goalPoint;
+    public Vector3 location, ballRespawnPoint, boomboxRespawnPoint, timerRespawnPoint, goalPoint;
     public BasketballGoal goal;
     public TimerUi timer;
 }
@@ -50,7 +50,8 @@ public class MenuManager : MonoBehaviour {
                 timer = lo.GetComponentInChildren<TimerUi>(),
                 ballRespawnPoint = lo.transform.GetChild(0).position,
                 boomboxRespawnPoint = lo.transform.GetChild(1).position,
-                goalPoint = lo.GetComponentInChildren<BasketballGoal>().transform.GetChild(0).GetChild(0).position
+                goalPoint = lo.GetComponentInChildren<BasketballGoal>().transform.GetChild(0).GetChild(0).position,
+                timerRespawnPoint = lo.GetComponentInChildren<TimerUi>().transform.position
             };
             _levels.Add(bl);
         }
@@ -122,7 +123,13 @@ public class MenuManager : MonoBehaviour {
         if (TrickShotsSelector.InMenu)
             TrickShotsSelector.Instance.CloseMenu();
         
-        TrickShotsSelector.Instance.ActivateButton(!InMenu && GameManager.Instance.TurnPhase is not TurnPhase.Shooting);
+        if (GameManager.Instance.Mode is GameType.OnlineLobby or GameType.OnlineMatch)
+            TrickShotsSelector.Instance.ActivateButton(
+                !InMenu && MPSpawner.Ball.Player.IsTurn && MPSpawner.Ball.TurnPhase is not TurnPhase.Responding
+            );
+        else
+            TrickShotsSelector.Instance.ActivateButton(!InMenu && GameManager.Instance.TurnPhase is not TurnPhase.Responding);
+        
         Back();
         _menu.SetActive(InMenu);
     }

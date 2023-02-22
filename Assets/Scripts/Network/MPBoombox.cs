@@ -1,92 +1,115 @@
 using System.Collections;
+using System.Collections.Generic;
+using Fusion;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler, IPointerExitHandler {
+public class MPBoombox : NetworkBehaviour , IShot, IPointerClickHandler, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler, IPointerExitHandler {
     [SerializeField] private float _moveAcceleration = 30f;
     public int CurrentOccurrences { get; set; }
+    
     private AudioSource _audioSource;
     private SpriteRenderer _spriteRenderer;
     private Rigidbody2D _rigidbody;
     private Vector2 _startPoint, _startClickPoint;
-    private bool _moving;
-    private Collider2D[] _results = new Collider2D[2];
     private Transform _transform;
     private Animator _animator;
     private bool _cooldown;
+    
+    public Vector2 AimPoint;
+    public bool Moving;
+    private bool _startedMoving;
+    
+    [Networked] public NetworkBool Active { get; set; }
     private void Awake() {
         _audioSource = GetComponent<AudioSource>();
-        _spriteRenderer = GetComponent<SpriteRenderer>();
+        _spriteRenderer = transform.GetChild(0).GetComponent<SpriteRenderer>();
         _rigidbody = GetComponent<Rigidbody2D>();
-        _animator = GetComponent<Animator>();
+        _animator = _spriteRenderer.GetComponent<Animator>();
         _transform = transform;
     }
-    
-    private void FixedUpdate() {
-        if (!_moving) return;
+
+    private void Update() {
+        AimPoint = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+    }
+
+    public override void Spawned() {
+        Physics2D.IgnoreLayerCollision(LayerMask.NameToLayer("Ball"), LayerMask.NameToLayer("Boombox"), !Active);
         
-        var pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Move(pos);
+        if (!MPSpawner.Boombox)
+            MPSpawner.Boombox = this;
+    }
+    
+    public override void FixedUpdateNetwork() {
+        if (!GetInput(out NetworkInputData data)) return;
+
+        if (data.BoomboxMoving && !_startedMoving) {
+            _startedMoving = true;
+            StartMoving(data.BoomboxAimPoint);
+        } else if (!data.BoomboxMoving && _startedMoving) {
+            _startedMoving = false;
+            EndMoving();
+        }
+        
+        if (data.BoomboxMoving)
+            Move(data.BoomboxAimPoint);
     }
 
     public void OnPointerClick(PointerEventData eventData) {
-        if (eventData.button == PointerEventData.InputButton.Left) {
-            _audioSource.mute = !_audioSource.mute;
-            _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
-        }
+        if (eventData.button != PointerEventData.InputButton.Left) return;
+        
+        _audioSource.mute = !_audioSource.mute;
+        _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
     }
 
     private void OnCollisionEnter2D(Collision2D col) {
-        if (Utility.PlayBallSound(col.gameObject) && col.relativeVelocity.sqrMagnitude > 10f) {
+        if (_cooldown) return;
+        if (Utility.PlayBallSound(col.gameObject)) {
             _audioSource.mute = !_audioSource.mute;
             _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
         }
         if (!Utility.ActivateShotCollision(col.gameObject)) return;
-        if (_cooldown) return;
 
         StartCoroutine(Cooldown());
-
-        Utility.AddToNetworkTrick("boombox");
         CurrentOccurrences++;
     }
     public void OnPointerDown(PointerEventData eventData) {
-        if (MenuManager.InMenu || !MenuManager.Instance.BoomboxEnabled) return;
+        if (MenuManager.InMenu || !Active || !MPSpawner.Ball.Player.IsTurn) return;
 
         if (TrickShotsSelector.InMenu)
             TrickShotsSelector.Instance.CloseMenu();
         
-        var pos = Camera.main.ScreenToWorldPoint(eventData.pressPosition);
         
         if (eventData.button == PointerEventData.InputButton.Right && 
-                    (GameManager.Instance.TurnPhase is TurnPhase.Moving or TurnPhase.Resting)) {
-            StartMoving(pos);
+                    (MPSpawner.Ball.TurnPhase is TurnPhase.Moving or TurnPhase.Resting)) {
+            Moving = true;
         } 
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        if (MenuManager.InMenu || !MenuManager.Instance.BoomboxEnabled) return;
-        if (GameManager.Instance.TurnPhase is not TurnPhase.Resting and not TurnPhase.Moving) return;
+        if (MenuManager.InMenu || !Active) return;
+        if (MPSpawner.Ball.TurnPhase is not TurnPhase.Resting and not TurnPhase.Moving) return;
         
         Color.RGBToHSV(_spriteRenderer.color, out var h, out var s, out _);
         _spriteRenderer.color = Color.HSVToRGB(h, s, 0.5f);
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-        if (MenuManager.InMenu || !MenuManager.Instance.BoomboxEnabled) return;
+        if (MenuManager.InMenu || !Active) return;
         
         Color.RGBToHSV(_spriteRenderer.color, out var h, out var s, out _);
         _spriteRenderer.color = Color.HSVToRGB(h, s, 1f);
     }
 
     public void OnPointerUp(PointerEventData eventData) {
-        if (MenuManager.InMenu || !MenuManager.Instance.BoomboxEnabled) return;
+        if (MenuManager.InMenu || !Active || !MPSpawner.Ball.Player.IsTurn) return;
 
-        if (eventData.button == PointerEventData.InputButton.Right && _moving)
-            EndMoving();
+        if (eventData.button == PointerEventData.InputButton.Right && Moving)
+            Moving = false;
     }
 
     private void StartMoving(Vector2 position) {
-        _moving = true;
+        Moving = true;
         _startClickPoint = position;
         _startPoint = _transform.position;
         _rigidbody.bodyType = RigidbodyType2D.Dynamic;
@@ -96,7 +119,7 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     private void EndMoving() {
         _rigidbody.bodyType = RigidbodyType2D.Kinematic;
         ResetRigidbody();
-        _moving = false;
+        Moving = false;
     }
     
     private void ResetRigidbody() {

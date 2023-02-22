@@ -409,7 +409,6 @@ MonoBehaviour:
   _SetShot:
     _value: 0
   _PlayerIndex: 0
-  _PlayerCount: 2
 --- !u!58 &1519264543116467251
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -448,7 +447,7 @@ MonoBehaviour:
     PosBlendStart: 0.25
     PosBlendEnd: 1
     PosMinCorrection: 0.05
-    PosTeleportDistance: 2
+    PosTeleportDistance: 6
     RotBlendStart: 100
     RotBlendEnd: 200
     RotTeleportRadians: 300
