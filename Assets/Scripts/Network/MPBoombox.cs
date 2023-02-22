@@ -1,11 +1,12 @@
 using System.Collections;
-using System.Collections.Generic;
 using Fusion;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class MPBoombox : NetworkBehaviour , IShot, IPointerClickHandler, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler, IPointerExitHandler {
     [SerializeField] private float _moveAcceleration = 30f;
+    
+    [SerializeField] private AudioClip _clickSound;
     public int CurrentOccurrences { get; set; }
     
     private AudioSource _audioSource;
@@ -19,6 +20,7 @@ public class MPBoombox : NetworkBehaviour , IShot, IPointerClickHandler, IPointe
     public Vector2 AimPoint;
     public bool Moving;
     private bool _startedMoving;
+    private BasketballSounds _basketballSounds;
     
     [Networked] public NetworkBool Active { get; set; }
     private void Awake() {
@@ -26,6 +28,7 @@ public class MPBoombox : NetworkBehaviour , IShot, IPointerClickHandler, IPointe
         _spriteRenderer = transform.GetChild(0).GetComponent<SpriteRenderer>();
         _rigidbody = GetComponent<Rigidbody2D>();
         _animator = _spriteRenderer.GetComponent<Animator>();
+        _basketballSounds = GetComponentInChildren<BasketballSounds>();
         _transform = transform;
     }
 
@@ -58,6 +61,7 @@ public class MPBoombox : NetworkBehaviour , IShot, IPointerClickHandler, IPointe
     public void OnPointerClick(PointerEventData eventData) {
         if (eventData.button != PointerEventData.InputButton.Left) return;
         
+        _basketballSounds.PlaySound(100000f);
         _audioSource.mute = !_audioSource.mute;
         _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
     }
@@ -65,6 +69,7 @@ public class MPBoombox : NetworkBehaviour , IShot, IPointerClickHandler, IPointe
     private void OnCollisionEnter2D(Collision2D col) {
         if (_cooldown) return;
         if (Utility.PlayBallSound(col.gameObject)) {
+            _basketballSounds.PlaySound(col.relativeVelocity.sqrMagnitude);
             _audioSource.mute = !_audioSource.mute;
             _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
         }

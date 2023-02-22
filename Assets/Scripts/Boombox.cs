@@ -4,21 +4,24 @@ using UnityEngine.EventSystems;
 
 public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler, IPointerExitHandler {
     [SerializeField] private float _moveAcceleration = 30f;
+    [SerializeField] private AudioClip _clickSound;
     public int CurrentOccurrences { get; set; }
     private AudioSource _audioSource;
     private SpriteRenderer _spriteRenderer;
     private Rigidbody2D _rigidbody;
     private Vector2 _startPoint, _startClickPoint;
     private bool _moving;
-    private Collider2D[] _results = new Collider2D[2];
     private Transform _transform;
     private Animator _animator;
     private bool _cooldown;
+    private BasketballSounds _basketballSounds;
+    
     private void Awake() {
         _audioSource = GetComponent<AudioSource>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _rigidbody = GetComponent<Rigidbody2D>();
         _animator = GetComponent<Animator>();
+        _basketballSounds = GetComponentInChildren<BasketballSounds>();
         _transform = transform;
     }
     
@@ -31,22 +34,22 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
 
     public void OnPointerClick(PointerEventData eventData) {
         if (eventData.button == PointerEventData.InputButton.Left) {
+            _basketballSounds.PlaySound(100000f);
             _audioSource.mute = !_audioSource.mute;
             _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
         }
     }
 
     private void OnCollisionEnter2D(Collision2D col) {
+        if (_cooldown) return;
         if (Utility.PlayBallSound(col.gameObject) && col.relativeVelocity.sqrMagnitude > 10f) {
+            _basketballSounds.PlaySound(col.relativeVelocity.sqrMagnitude);
             _audioSource.mute = !_audioSource.mute;
             _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
         }
         if (!Utility.ActivateShotCollision(col.gameObject)) return;
-        if (_cooldown) return;
 
         StartCoroutine(Cooldown());
-
-        Utility.AddToNetworkTrick("boombox");
         CurrentOccurrences++;
     }
     public void OnPointerDown(PointerEventData eventData) {
@@ -124,7 +127,7 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     
     private IEnumerator Cooldown() {
         _cooldown = true;
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.25f);
         _cooldown = false;
     }
 }
