@@ -5,7 +5,7 @@ using UnityEngine;
 public class MPTimer : NetworkBehaviour { 
     [Networked] public TickTimer Timer { get; set; }
     [Networked(OnChanged = nameof(OnTimerUpdated))] public NetworkBool OutOfTime { get; set; }
-    [Networked] public int Seconds { get; set; } = 15;
+    [Networked] public int Seconds { get; set; } = 25;
 
     private TextMeshProUGUI _leftDigit, _rightDigit;
     private AudioSource _audioSource;

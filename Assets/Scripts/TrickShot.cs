@@ -44,6 +44,18 @@ public class TrickShot: MonoBehaviour {
             TrickShotsSelector.Instance.RemoveShotIfExists(this);
         }
     }
+    public static void AddMPBoomboxToObjects() {
+        if (!MPSpawner.Boombox.Active) return;
+        
+        var ts = FindObjectsOfType<TrickShot>()?.First(t => t.TrickNumber == 9);
+        ts.ShotObjects.Add(FindObjectOfType<MPBoombox>().gameObject);
+    }
+    public static void RemoveMPBoomboxToObjects() {
+        if (!MPSpawner.Boombox.Active) return;
+        
+        var ts = FindObjectsOfType<TrickShot>()?.First(t => t.TrickNumber == 9);
+        ts.ShotObjects.RemoveAt(1);
+    }
     
     public static void SelectTrickShotWithInput(int tn) {
         var ts = FindObjectsOfType<TrickShot>().First(t => t.TrickNumber == tn);

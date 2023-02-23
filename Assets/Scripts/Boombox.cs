@@ -4,9 +4,8 @@ using UnityEngine.EventSystems;
 
 public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownHandler, IPointerUpHandler, IPointerEnterHandler, IPointerExitHandler {
     [SerializeField] private float _moveAcceleration = 30f;
-    [SerializeField] private AudioClip _clickSound;
     public int CurrentOccurrences { get; set; }
-    private AudioSource _audioSource;
+    public AudioSource AudioSource { get; private set; }
     private SpriteRenderer _spriteRenderer;
     private Rigidbody2D _rigidbody;
     private Vector2 _startPoint, _startClickPoint;
@@ -17,7 +16,7 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     private BasketballSounds _basketballSounds;
     
     private void Awake() {
-        _audioSource = GetComponent<AudioSource>();
+        AudioSource = GetComponent<AudioSource>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _rigidbody = GetComponent<Rigidbody2D>();
         _animator = GetComponent<Animator>();
@@ -35,8 +34,8 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
     public void OnPointerClick(PointerEventData eventData) {
         if (eventData.button == PointerEventData.InputButton.Left) {
             _basketballSounds.PlaySound(100000f);
-            _audioSource.mute = !_audioSource.mute;
-            _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
+            AudioSource.mute = !AudioSource.mute;
+            _animator.SetFloat("PlaySpeed", AudioSource.mute ? 0f : 1f);
         }
     }
 
@@ -44,8 +43,8 @@ public class Boombox : MonoBehaviour, IPointerClickHandler, IShot, IPointerDownH
         if (_cooldown) return;
         if (Utility.PlayBallSound(col.gameObject) && col.relativeVelocity.sqrMagnitude > 10f) {
             _basketballSounds.PlaySound(col.relativeVelocity.sqrMagnitude);
-            _audioSource.mute = !_audioSource.mute;
-            _animator.SetFloat("PlaySpeed", _audioSource.mute ? 0f : 1f);
+            AudioSource.mute = !AudioSource.mute;
+            _animator.SetFloat("PlaySpeed", AudioSource.mute ? 0f : 1f);
         }
         if (!Utility.ActivateShotCollision(col.gameObject)) return;
 

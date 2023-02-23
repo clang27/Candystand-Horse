@@ -21,7 +21,7 @@ public class Rim : MonoBehaviour, IShot {
     }
     private IEnumerator Cooldown() {
         _cooldown = true;
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.25f);
         _cooldown = false;
     }
 }

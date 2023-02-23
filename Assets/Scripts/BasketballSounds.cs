@@ -12,7 +12,9 @@ public class BasketballSounds : MonoBehaviour {
     }
 
     public void PlaySound(float collisionStrength) {
-        _audioSource.pitch = Random.Range(0.96f, 1.04f);
+        if (Time.timeScale > 0.9f)
+            _audioSource.pitch = Random.Range(0.96f, 1.04f);
+        
         _audioSource.volume = Mathf.Clamp(Mathf.Sqrt(collisionStrength) / 25f, 0.01f, 1f);
         
         if (collisionStrength > loudThreshold && loudSounds.Count > 0) {

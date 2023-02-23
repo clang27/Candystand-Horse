@@ -25,7 +25,7 @@ public class MenuManager : MonoBehaviour {
 
     private int _levelNumber = 0;
     private int _playerCount = 2;
-    public int ShotClock { get; private set; } = 15;
+    public int ShotClock { get; private set; } = 25;
     public string RoomCode { get; private set; }
 
     private bool _boomboxEnabled;
@@ -34,7 +34,7 @@ public class MenuManager : MonoBehaviour {
     private bool BufferedHost { get; set; }
     
     private const int MinPlayerCount = 2, MaxPlayerCount = 4;
-    private const int MinShotClock = 10, MaxShotClock = 30;
+    private const int MinShotClock = 15, MaxShotClock = 45;
     
     public BasketballLevel CurrentLevel => _levels[_levelNumber];
     private List<BasketballLevel> _levels = new();

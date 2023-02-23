@@ -25,7 +25,7 @@ public class GameManager : MonoBehaviour {
     private Coroutine _pauseRoutine;
     private MPSpawner _mpSpawner;
     private bool _transitioning;
-    
+
     private void Awake() {
         Instance = this;
 
@@ -61,6 +61,7 @@ public class GameManager : MonoBehaviour {
         
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
+        GameUiManager.Instance.ShowBanner(_players[0].Name + "'s Turn", 2f);
     }
 
     public void GoToAi() {
@@ -76,6 +77,7 @@ public class GameManager : MonoBehaviour {
         
         GameUiManager.Instance.UpdateScore(_players);
         MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
+        GameUiManager.Instance.ShowBanner(_players[0].Name + "'s Turn", 2f);
     }
     public void GoToOnlineLobby(bool host) {
         if (!host && (string.IsNullOrEmpty(MenuManager.Instance.RoomCode) || 
@@ -107,7 +109,9 @@ public class GameManager : MonoBehaviour {
         Mode = GameType.OnlineMatch;
         
         GameUiManager.Instance.HideLobbyInfo();
-        
+        TrickShot.AddMPBoomboxToObjects();
+        GameUiManager.Instance.ShowBanner( MPBasketball.Players[0].Name + "'s Turn", 2f);
+
         TurnPhase = TurnPhase.Resting;
         if (_mpSpawner.IsServer) {
             foreach (var b in _mpSpawner.Balls)
@@ -304,7 +308,7 @@ public class GameManager : MonoBehaviour {
 
         var p = _mpSpawner.IsServer ? MPPlayer.CurrentPlayer(players) : MPPlayer.NextPlayer(players);
         
-        if (_players.Count(p => p.Lost) == _players.Count - 1) {
+        if (players.Count(p => p.Lost) == players.Count - 1) {
             GameUiManager.Instance.ShowBanner(p.Name + " Wins!!", 12f);
             _audioSource.PlayOneShot(_applause);
             TrickShotsSelector.Instance.ActivateButton(false);
@@ -406,5 +410,17 @@ public class GameManager : MonoBehaviour {
         TurnPhase = TurnPhase.Moving;
         if (Mode is GameType.Practice or GameType.OnlineLobby)
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
+    }
+
+    public bool PotentialLastShot() {
+        if (Mode is GameType.Practice or GameType.OnlineLobby) return false;
+
+        if (Mode is GameType.OnlineMatch) {
+            var p1 = MPPlayer.CurrentPlayer(MPBasketball.Players);
+            return p1.Score == p1.MaxScore - 1;
+        }
+        
+        var p2 = Player.CurrentPlayer(_players);
+        return p2.Score == p2.MaxScore - 1;
     }
 }

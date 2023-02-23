@@ -13,7 +13,7 @@ public class MPPlayer : NetworkBehaviour {
     [Networked(OnChanged = nameof(OnCountChanged))] private int PlayerCount { get; set; }
 
     public bool Lost => Score == MaxScore;
-    private int MaxScore => PlayerCount switch {
+    public int MaxScore => PlayerCount switch {
         2 => 5,
         3 => 4,
         4 => 3,
@@ -85,6 +85,8 @@ public class MPPlayer : NetworkBehaviour {
         GameUiManager.Instance.UpdateMPScore(MPBasketball.Players);
 
         var bb = changed.Behaviour.Basketball;
+        
+        if (MPBasketball.Players.Count(p => p.Lost) == MPBasketball.Players.Count - 1) return;
         if (bb.IsMe && bb.Player.IsTurn && bb.TurnPhase is not TurnPhase.Responding)
             TrickShotsSelector.Instance.ActivateButton(true);
     }

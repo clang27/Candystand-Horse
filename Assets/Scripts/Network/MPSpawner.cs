@@ -112,7 +112,7 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
         if (!Boombox) {
             var boomboxSpawn = MenuManager.Instance.CurrentLevel.boomboxRespawnPoint;
             Boombox = runner.Spawn(_boomboxPrefab, boomboxSpawn, Quaternion.identity, player).GetComponent<MPBoombox>();
-            Boombox.Active = MenuManager.Instance.BoomboxEnabled;
+            Boombox.Active = false;
         }
         
         if (!Timer) {
@@ -206,6 +206,8 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
         GameUiManager.Instance.ShowLoading(false);
         GameUiManager.Instance.HideLobbyInfo();
         GameUiManager.Instance.UpdateMPScore(new List<MPPlayer>());
+        
+        TrickShot.RemoveMPBoomboxToObjects();
         
         Destroy(_runner);
         Destroy(GetComponent<NetworkSceneManagerDefault>());

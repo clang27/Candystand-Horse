@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 public class Player {
     public string Name { get; }
@@ -9,7 +8,7 @@ public class Player {
     public bool SetShot { get; set; }
     public bool IsAi { get; set; }
     public bool Lost => Score == MaxScore;
-    private int MaxScore { get; }
+    public int MaxScore { get; }
 
     public Player(string name, int playerCount) {
         Name = name;
