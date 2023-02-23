@@ -17,8 +17,6 @@ public class Rim : MonoBehaviour, IShot {
         if (_cooldown) return;
 
         StartCoroutine(Cooldown());
-
-        Utility.AddToNetworkTrick("rim");
         CurrentOccurrences++;
     }
     private IEnumerator Cooldown() {

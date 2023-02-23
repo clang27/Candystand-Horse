@@ -24,6 +24,7 @@ public class GameManager : MonoBehaviour {
     public GameType Mode { get; private set; }
     private Coroutine _pauseRoutine;
     private MPSpawner _mpSpawner;
+    private bool _transitioning;
     
     private void Awake() {
         Instance = this;
@@ -182,6 +183,9 @@ public class GameManager : MonoBehaviour {
     }
     
     public void NextMPPlayersTurn() {
+        if (_transitioning) return;
+        _transitioning = true;
+        
         if (_incorrectShot) {
             _audioSource.PlayOneShot(_whistle);
             GameUiManager.Instance.ShowBanner("Wrong Shot!", 2f);
@@ -199,13 +203,13 @@ public class GameManager : MonoBehaviour {
             else if (!successfulShot && MPPlayer.SomeHasAShotSet(players))
                 MPPlayer.CurrentPlayer(players).Score++;
             
-            MPPlayer.CurrentPlayer(players).Basketball.CancelActions();
             foreach (var b in _mpSpawner.Balls)
                 b.TurnPhase = TurnPhase.Transitioning;
 
             MPSpawner.Timer.Timer = TickTimer.None;
         }
         
+        MPPlayer.CurrentPlayer(players).Basketball.CancelActions();
         TrickShotsSelector.Instance.ActivateButton(false);
         TrickShotsSelector.Instance.CloseMenu();
         
@@ -257,6 +261,7 @@ public class GameManager : MonoBehaviour {
     }
     private IEnumerator PauseSwitchingMPTurns() {
         yield return new WaitForSeconds(2.5f);
+        _transitioning = false;
         _shotMade = false;
         _incorrectShot = false;
         var players = MPBasketball.Players;
@@ -304,7 +309,8 @@ public class GameManager : MonoBehaviour {
             TrickShotsSelector.Instance.ActivateButton(false);
         } else {
             GameUiManager.Instance.ShowBanner(p.Name + "'s Turn", 2f);
-            MPSpawner.Timer.Timer = TickTimer.CreateFromSeconds(_mpSpawner.Runner, MPSpawner.Timer.Seconds);
+            if (_mpSpawner.IsServer)
+                MPSpawner.Timer.Timer = TickTimer.CreateFromSeconds(_mpSpawner.Runner, MPSpawner.Timer.Seconds);
         }
     }
 
@@ -372,9 +378,10 @@ public class GameManager : MonoBehaviour {
             MenuManager.Instance.CurrentLevel.goal.ResetGoal();
         else
             TrickShotsSelector.Instance.ActivateButton(false);
-        
-        if (TrickShotsSelector.Instance.HasShot("Blindfolded"))
+
+        if (TrickShotsSelector.Instance.HasShot("Blindfolded")) {
             _blindfold.PutOn(true);
+        }
     }
 
     public void EndedShot() {

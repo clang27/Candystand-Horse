@@ -1360,18 +1360,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 1527580222}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
   m_IsOn: 0
 --- !u!1 &114546703
 GameObject:
@@ -2911,6 +2899,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4d068e62c063df4ca5b0711baa65cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TrickNumber: 3
   ShotObjects:
   - {fileID: 462439517}
   - {fileID: 785678654}
@@ -4977,6 +4966,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4d068e62c063df4ca5b0711baa65cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TrickNumber: 5
   ShotObjects:
   - {fileID: 1301464935}
   - {fileID: 7961302357567685138}
@@ -5498,6 +5488,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4d068e62c063df4ca5b0711baa65cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TrickNumber: 8
   ShotObjects:
   - {fileID: 1600354372}
   TargetOccurrences: 1
@@ -5608,6 +5599,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4d068e62c063df4ca5b0711baa65cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TrickNumber: 7
   ShotObjects:
   - {fileID: 335838743}
   TargetOccurrences: 2
@@ -6229,6 +6221,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4d068e62c063df4ca5b0711baa65cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TrickNumber: 6
   ShotObjects:
   - {fileID: 335838743}
   TargetOccurrences: 1
@@ -7182,7 +7175,7 @@ SpriteRenderer:
   m_SortingLayer: 1
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 04aca75670e589341ab040a290bf85fa, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -8732,6 +8725,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4d068e62c063df4ca5b0711baa65cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TrickNumber: 4
   ShotObjects:
   - {fileID: 697202056}
   TargetOccurrences: 1
@@ -10314,6 +10308,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4d068e62c063df4ca5b0711baa65cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TrickNumber: 9
   ShotObjects:
   - {fileID: 1772471962}
   TargetOccurrences: 1
@@ -10589,6 +10584,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4d068e62c063df4ca5b0711baa65cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TrickNumber: 2
   ShotObjects:
   - {fileID: 752050966}
   TargetOccurrences: 1
@@ -13752,6 +13748,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4d068e62c063df4ca5b0711baa65cd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TrickNumber: 1
   ShotObjects:
   - {fileID: 462439517}
   - {fileID: 785678654}
@@ -14718,6 +14715,7 @@ MonoBehaviour:
   _trickShotButton: {fileID: 1274903789}
   _upArrow: {fileID: 21300000, guid: f8b828fa5e2bf4e4f9c398be277f318d, type: 3}
   _downArrow: {fileID: 21300000, guid: 6f14f949f50c54d4cad4fe08412be316, type: 3}
+  _boomboxShot: {fileID: 1527580222}
 --- !u!114 &2070248478
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -8,8 +8,8 @@ public class EndGoal : MonoBehaviour {
         _goal = GetComponentInParent<BasketballGoal>();
     }
     private void OnTriggerEnter2D(Collider2D col) {
-        if (!Utility.ActivateGoalTrigger(col.gameObject)) return;
         if (_cooldown) return;
+        if (!Utility.ActivateGoalTrigger(col.gameObject)) return;
 
         StartCoroutine(Cooldown());
         _goal.EndGoal(col.attachedRigidbody.velocity.sqrMagnitude);

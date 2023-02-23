@@ -11,14 +11,13 @@ public class Wall : MonoBehaviour, IShot {
     }
 
     private void OnCollisionEnter2D(Collision2D col) {
+        if (_cooldown) return;
         if (Utility.PlayBallSound(col.gameObject))
             _sounds.PlaySound(col.relativeVelocity.sqrMagnitude);
         
         if (!Utility.ActivateShotCollision(col.gameObject)) return;
-        if (_cooldown) return;
 
         StartCoroutine(Cooldown());
-        Utility.AddToNetworkTrick("wall");
         CurrentOccurrences++;
     }
     private IEnumerator Cooldown() {

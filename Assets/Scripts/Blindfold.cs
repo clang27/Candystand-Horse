@@ -9,9 +9,7 @@ public class Blindfold : MonoBehaviour, IShot {
 
     public void PutOn(bool b) {
         LeanTween.alphaCanvas(_canvasGroup, (b) ? 1f : 0f, 0.2f);
-        if (b) {
-            Utility.AddToNetworkTrick("blind");
-            CurrentOccurrences++;
-        }
+        if (b)
+            CurrentOccurrences = 1;
     }
 }

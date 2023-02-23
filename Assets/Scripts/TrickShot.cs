@@ -1,19 +1,11 @@
 using System.Collections.Generic;
 using System.Linq;
-using Fusion;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// TODO: Remove this if going with input sent
-public struct MPTrickShot : INetworkStruct {
-    public NetworkString<_32> Name;
-    public int TargetOccurrences;
-    public int Occurrences;
-    public NetworkBool ExactTarget;
-}
-
 public class TrickShot: MonoBehaviour {
+    [SerializeField] public int TrickNumber;
     public string Name { get; private set; }
     private bool Selected { get; set; }
     public List<GameObject> ShotObjects;
@@ -34,6 +26,12 @@ public class TrickShot: MonoBehaviour {
         _button.onClick.AddListener(SelectShot);
     }
     public void SelectShot() {
+        if (MPSpawner.Tricks)
+            MPSpawner.TricksClicked[TrickNumber - 1] = true;
+        else
+            Select();
+    }
+    private void Select() {
         if (!Selected) {
             ShowCheckmark(true);
             TrickShotsSelector.Instance.AddShot(this);
@@ -46,6 +44,13 @@ public class TrickShot: MonoBehaviour {
             TrickShotsSelector.Instance.RemoveShotIfExists(this);
         }
     }
+    
+    public static void SelectTrickShotWithInput(int tn) {
+        var ts = FindObjectsOfType<TrickShot>().First(t => t.TrickNumber == tn);
+
+        ts.Select();
+    }
+    
     public void ClearCheckmark() {
         ShowCheckmark(false);
     }

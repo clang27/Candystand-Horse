@@ -40,22 +40,4 @@ public static class Utility {
 
         return GameManager.Instance.TurnPhase is not TurnPhase.Moving and not TurnPhase.Charging;
     }
-
-    // TODO: Remove if doing input
-    public static void AddToNetworkTrick(string subname) {
-        if (!MPSpawner.Ball || !MPSpawner.Ball.Player.IsTurn || !MPSpawner.Ball.IsMe) return;
-
-        var tricksToUpdate = MPSpawner.Ball.ClientTricks
-            .Where(t => t.Name.ToLower().Contains(subname.ToLower()))
-            .ToList();
-        
-        foreach (var t1 in tricksToUpdate
-                     .Where(t1 => MPSpawner.Ball.ClientTricks.Any(t2 => t2.Name.Equals(t1.Name)))) {
-            for (var i = 0; i < MPSpawner.Ball.ClientTricks.Length; i++) {
-                if (!MPSpawner.Ball.ClientTricks[i].Name.Equals(t1.Name)) continue;
-                
-                MPSpawner.Ball.ClientTricks[i].Occurrences++;
-            }
-        }
-    }
 }

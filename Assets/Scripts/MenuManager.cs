@@ -125,7 +125,7 @@ public class MenuManager : MonoBehaviour {
         
         if (GameManager.Instance.Mode is GameType.OnlineLobby or GameType.OnlineMatch)
             TrickShotsSelector.Instance.ActivateButton(
-                !InMenu && MPSpawner.Ball.Player.IsTurn && MPSpawner.Ball.TurnPhase is not TurnPhase.Responding
+                !InMenu && MPSpawner.Ball.Player.IsTurn && MPSpawner.Ball.TurnPhase is not TurnPhase.Responding && GameManager.Instance.Mode is GameType.OnlineMatch
             );
         else
             TrickShotsSelector.Instance.ActivateButton(!InMenu && GameManager.Instance.TurnPhase is not TurnPhase.Responding);

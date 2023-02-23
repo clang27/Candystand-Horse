@@ -199,6 +199,7 @@ GameObject:
   - component: {fileID: 2092656645909491241}
   - component: {fileID: 1519264543116467251}
   - component: {fileID: 1124056100}
+  - component: {fileID: 8925420329478336097}
   m_Layer: 7
   m_Name: NetworkBall
   m_TagString: Untagged
@@ -367,6 +368,7 @@ MonoBehaviour:
   - {fileID: 9181444371596159618}
   - {fileID: 2092656645909491241}
   - {fileID: 1124056100}
+  - {fileID: 8925420329478336097}
   SimulationBehaviours: []
 --- !u!50 &9181444371596159620
 Rigidbody2D:
@@ -453,6 +455,19 @@ MonoBehaviour:
     RotTeleportRadians: 300
   UseLegacySharedModeInterpolation: 0
   TargetInterpolationDelay: 0.03
+--- !u!114 &8925420329478336097
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9181444371596159622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e36ef2acc277ab4394a1064e3914e38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _interpolationDataSource: 0
 --- !u!1 &9181444371999347618
 GameObject:
   m_ObjectHideFlags: 0

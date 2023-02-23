@@ -26,10 +26,6 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     public Vector2 AimPoint;
     public bool Moving, Shooting;
     private bool _startedMoving, _startedShooting;
-    
-    // TODO: Remove if doing input
-    public readonly MPTrickShot[] ClientTricks = new MPTrickShot[6];
-    public static readonly MPTrickShot[] ServerTricks = new MPTrickShot[6];
 
     public void Awake() {
         _ballTransform = transform.GetChild(0);
@@ -41,7 +37,8 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
         _camera = FindObjectOfType<Camera>();
     }
     private void Update() {
-        AimPoint = _camera.ScreenToWorldPoint(Input.mousePosition);
+        if (Player.IsTurn && IsMe)
+            AimPoint = _camera.ScreenToWorldPoint(Input.mousePosition);
     }
 
     public override void Render() {
@@ -50,23 +47,16 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     }
 
     public override void Spawned() {
-        if (!MPSpawner.Ball)
+        if (!MPSpawner.Ball) {
             MPSpawner.Ball = this;
+        }
+        if (!MPSpawner.Tricks) {
+            MPSpawner.Tricks = GetComponent<MPTricks>();
+        }
     }
     
     public override void FixedUpdateNetwork() {
         if (!GetInput(out NetworkInputData data)) return;
-
-        if (Player.IsTurn) {
-            ServerTricks[0] = data.TrickOne;
-            ServerTricks[1] = data.TrickTwo;
-            ServerTricks[2] = data.TrickThree;
-            ServerTricks[3] = data.TrickFour;
-            ServerTricks[4] = data.TrickFive;
-            ServerTricks[5] = data.TrickSix;
-
-            TrickShotsSelector.Instance.UpdateMPListText(ServerTricks);
-        }
 
         if (data.BallMoving && !_startedMoving) {
             _startedMoving = true;
@@ -115,6 +105,7 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
         }
     }
     
+    // Client will not get this if mouse clicked too fast
     public void OnPointerUp(PointerEventData eventData) {
         if (!IsMe || !Player.IsTurn) return;
         
@@ -253,15 +244,12 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     }
     
     public static void OnPhaseChanged(Changed<MPBasketball> changed) {
-        if (changed.Behaviour.IsMe) return;
+        if (changed.Behaviour.IsMe || changed.Behaviour.Runner.IsServer) return;
         
         if (changed.Behaviour.TurnPhase == TurnPhase.Charging) {
-            changed.Behaviour._startBallPoint = changed.Behaviour._rigidbody.position;
-            changed.Behaviour._arrowSpriteRenderer.enabled = true;
-            changed.Behaviour._arrowSpriteRenderer.size = new Vector2(0f, 1f);
-            changed.Behaviour._arrowTransform.rotation = Quaternion.identity;
+            changed.Behaviour.StartShooting(changed.Behaviour._rigidbody.position);
         } else if (changed.Behaviour.TurnPhase == TurnPhase.Shooting) {
-            changed.Behaviour._arrowSpriteRenderer.enabled = false;
+            changed.Behaviour.EndShooting();
         }
     }
 }

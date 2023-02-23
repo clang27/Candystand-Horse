@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class MPTimer : NetworkBehaviour { 
     [Networked] public TickTimer Timer { get; set; }
+    [Networked(OnChanged = nameof(OnTimerUpdated))] public NetworkBool OutOfTime { get; set; }
     [Networked] public int Seconds { get; set; } = 15;
 
     private TextMeshProUGUI _leftDigit, _rightDigit;
@@ -21,13 +22,10 @@ public class MPTimer : NetworkBehaviour {
     }
 
     public override void FixedUpdateNetwork() {
-        if (!GetInput(out NetworkInputData data)) return;
-
         if (!Timer.Expired(Runner)) return;
         
         Timer = TickTimer.None;
-        _audioSource.Play();
-        GameManager.Instance.NextMPPlayersTurn();
+        OutOfTime = true;
     }
 
     public override void Render() {
@@ -42,5 +40,13 @@ public class MPTimer : NetworkBehaviour {
 
         _leftDigit.text = ld;
         _rightDigit.text = rd;
+    }
+    private static void OnTimerUpdated(Changed<MPTimer> changed) {
+        if (!changed.Behaviour.OutOfTime) return;
+        
+        MPSpawner.Timer._audioSource.Play();
+        GameManager.Instance.NextMPPlayersTurn();
+
+        changed.Behaviour.OutOfTime = false;
     }
 }

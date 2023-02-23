@@ -6,14 +6,26 @@ using Fusion.Sockets;
 using UnityEngine;
 
 public struct NetworkInputData : INetworkInput {
+    public const byte TRICK1 = 0b000000001;
+    public const byte TRICK2 = 0b000000010;
+    public const byte TRICK3 = 0b000000100;
+    public const byte TRICK4 = 0b000001000;
+    public const byte TRICK5 = 0b000010000;
+    public const byte TRICK6 = 0b000100000;
+    public const byte TRICK7 = 0b001000000;
+    public const byte TRICK8 = 0b010000000;
+    public const ushort TRICK9 = 0b100000000;
+    
     public bool BallMoving, BallShooting;
     public Vector3 BallAimPoint;
     
     public bool BoomboxMoving;
     public Vector3 BoomboxAimPoint;
 
-    // TODO: Send flags for tricks clicked and have client register them
-    public MPTrickShot TrickOne, TrickTwo, TrickThree, TrickFour, TrickFive, TrickSix;
+    public ushort Tricks; // i.e. 0b000001000
+    public override string ToString() {
+        return BallMoving + " " + BallShooting + " " + BoomboxMoving + "\n" + Tricks;
+    }
 }
 
 public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
@@ -32,7 +44,11 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
     public static MPBasketball Ball { get; set; }
     public static MPBoombox Boombox { get; set; }
     public static MPTimer Timer { get; set; }
+    public static MPTricks Tricks { get; set; }
     
+    public static readonly bool[] TricksClicked = new bool[9];
+    private readonly bool[] _tricksClicked = new bool[9];
+
     public List<MPBasketball> Balls => _spawnedPlayers
         .Select(sp => sp.Value.GetComponent<MPBasketball>()).ToList();
 
@@ -40,6 +56,13 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
         _localBasketball = FindObjectOfType<BasketballFlick>();
         _localBoombox = FindObjectOfType<Boombox>();
         _localTimer = FindObjectOfType<TimerUi>();
+    }
+    
+    private void Update() {
+        for (var i = 0; i < _tricksClicked.Length; i++) {
+            _tricksClicked[i] = _tricksClicked[i] || TricksClicked[i];
+            TricksClicked[i] = false;
+        }
     }
     
     public async void StartGame(bool host) {
@@ -79,6 +102,7 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player) {
         if (!IsServer) return;
         
+        TrickShotsSelector.Instance.ActivateButton(false);
         GameUiManager.Instance.ShowLobbyInfo(_roomCode, _spawnedPlayers.Count > 0);
 
         var ballSpawn = MenuManager.Instance.CurrentLevel.ballRespawnPoint;
@@ -108,6 +132,7 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
     public void OnConnectedToServer(NetworkRunner runner) {
         if (IsServer) return;
         
+        TrickShotsSelector.Instance.ActivateButton(false);
         GameUiManager.Instance.ShowLobbyInfo(_roomCode, false);
     }
 
@@ -126,21 +151,38 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
 
     public void OnInput(NetworkRunner runner, NetworkInput input) {
         if (!Ball || !Boombox || !Timer) return;
-
-        // TODO: Send flags for tricks clicked and have client register them
-        input.Set(new NetworkInputData() {
+       
+        var data = new NetworkInputData() {
             BallMoving = Ball.Moving,
             BallShooting = Ball.Shooting,
             BallAimPoint = Ball.AimPoint,
             BoomboxMoving = Boombox.Moving,
-            BoomboxAimPoint = Boombox.AimPoint,
-            TrickOne = Ball.ClientTricks[0],
-            TrickTwo = Ball.ClientTricks[1],
-            TrickThree = Ball.ClientTricks[2],
-            TrickFour = Ball.ClientTricks[3],
-            TrickFive = Ball.ClientTricks[4],
-            TrickSix = Ball.ClientTricks[5]
-        });
+            BoomboxAimPoint = Boombox.AimPoint
+        };
+
+        if (_tricksClicked[0])
+            data.Tricks |= NetworkInputData.TRICK1;
+        if (_tricksClicked[1])
+            data.Tricks |= NetworkInputData.TRICK2;
+        if (_tricksClicked[2])
+            data.Tricks |= NetworkInputData.TRICK3;
+        if (_tricksClicked[3])
+            data.Tricks |= NetworkInputData.TRICK4;
+        if (_tricksClicked[4])
+            data.Tricks |= NetworkInputData.TRICK5;
+        if (_tricksClicked[5])
+            data.Tricks |= NetworkInputData.TRICK6;
+        if (_tricksClicked[6])
+            data.Tricks |= NetworkInputData.TRICK7;
+        if (_tricksClicked[7])
+            data.Tricks |= NetworkInputData.TRICK8;
+        if (_tricksClicked[8])
+            data.Tricks |= NetworkInputData.TRICK9;
+
+        for (var i = 0; i < _tricksClicked.Length; i++)
+            _tricksClicked[i] = false;
+
+        input.Set(data);
     }
 
     public void OnInputMissing(NetworkRunner runner, PlayerRef player, NetworkInput input) {
@@ -217,11 +259,12 @@ public class MPSpawner : MonoBehaviour, INetworkRunnerCallbacks {
     }
 
     public void OnSceneLoadDone(NetworkRunner runner) {
-        GameUiManager.Instance.ShowLoading(false);
         TrickShotsSelector.Instance.ActivateButton(false);
+        GameUiManager.Instance.ShowLoading(false);
     }
 
     public void OnSceneLoadStart(NetworkRunner runner) {
+        TrickShotsSelector.Instance.ActivateButton(false);
         _localBasketball.ResetPosition(Vector3.up * 1000f);
         _localBasketball.gameObject.SetActive(false);
         _localBoombox.gameObject.SetActive(false);

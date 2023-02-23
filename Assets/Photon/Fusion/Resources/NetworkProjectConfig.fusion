@@ -4,7 +4,7 @@
     "PeerMode": 0,
     "PhysicsEngine": 1,
     "ServerPhysicsMode": 1,
-    "UseLagCompensation": false,
+    "UseLagCompensation": true,
     "LagCompensation": {
         "HitboxBufferSize": 16,
         "HitboxCapacity": 512,
@@ -42,7 +42,7 @@
     "Simulation": {
         "InputDataWordCount": 0,
         "TickRate": 60,
-        "MaxPrediction": 60,
+        "MaxPrediction": 40,
         "DefaultPlayers": 4,
         "ReplicationMode": 1,
         "ObjectInterest": true,

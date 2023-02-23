@@ -5,12 +5,10 @@ public class Moon : MonoBehaviour, IShot {
     public int CurrentOccurrences { get; set; }
     private bool _cooldown;
     private void OnTriggerEnter2D(Collider2D col) {
-        if (!Utility.ActivateGoalTrigger(col.gameObject)) return;
         if (_cooldown) return;
+        if (!Utility.ActivateGoalTrigger(col.gameObject)) return;
 
         StartCoroutine(Cooldown());
-
-        Utility.AddToNetworkTrick("moon");
         CurrentOccurrences++;
     }
     private IEnumerator Cooldown() {
