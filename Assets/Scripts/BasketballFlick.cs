@@ -42,6 +42,7 @@ public class BasketballFlick : MonoBehaviour, IPointerDownHandler, IPointerEnter
 
     public void OnPointerDown(PointerEventData eventData) {
         if (MenuManager.InMenu || _ai.enabled) return;
+        if (_moving || _shooting) return;
 
         if (eventData.button == PointerEventData.InputButton.Right && 
             (GameManager.Instance.TurnPhase is TurnPhase.Moving or TurnPhase.Resting)) {

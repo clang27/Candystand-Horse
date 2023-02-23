@@ -78,7 +78,8 @@ public class GameManager : MonoBehaviour {
         MenuManager.Instance.CurrentLevel.timer.StartCountdown(MenuManager.Instance.ShotClock);
     }
     public void GoToOnlineLobby(bool host) {
-        if (!host && (MenuManager.Instance.RoomCode.Length < 5 || MenuManager.Instance.RoomCode.Contains("-"))) {
+        if (!host && (string.IsNullOrEmpty(MenuManager.Instance.RoomCode) || 
+                      MenuManager.Instance.RoomCode.Length < 5 || MenuManager.Instance.RoomCode.Contains("-"))) {
             _audioSource.PlayOneShot(_whistle);
             return;
         }

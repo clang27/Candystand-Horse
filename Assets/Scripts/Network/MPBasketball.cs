@@ -95,6 +95,7 @@ public class MPBasketball : NetworkBehaviour, IPointerDownHandler, IPointerEnter
     
     public void OnPointerDown(PointerEventData eventData) {
         if (!IsMe || !Player.IsTurn) return;
+        if (Moving || Shooting) return;
         
         if (eventData.button == PointerEventData.InputButton.Right && 
                 (TurnPhase is TurnPhase.Moving or TurnPhase.Resting)) {
